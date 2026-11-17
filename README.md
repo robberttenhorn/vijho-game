@@ -35,6 +35,8 @@ Je begint voor ROX Digital Agency aan de Vijverhofstraat 47.
 | Sevinc Pizza | Teilingerstraat 67C |
 | Albert Heijn | Eudokiaplein 12 |
 
+Langs de Vijverhofstraat loopt de Hofbogen, het oude spoorviaduct van de Hofpleinlijn, op de hoogte van de eerste verdieping. In de plint zitten panden achter bogen, waaronder het dichtgetimmerde Café Reef. Het viaduct heeft licht beton met reliëfpanelen, een donkere kroonlijst met consoles, bovenleidingmasten en een dubbel spoor. Waar de Teilingerstraat en de andere straten eronderdoor lopen, staat een grote, vlakke boog op zware pijlers van natuursteen. De ligging komt uit de BGT; het uiterlijk is nagemaakt naar een Street View-beeld van de maker.
+
 In de Vijverhofstraat en de Teilingerstraat liggen vuilniszakken, blikjes, pizzadozen, matrassen en omgevallen winkelwagentjes, en staat graffiti op de gevels. Zwervers en verslaafden sloffen rond, zitten op een stuk karton of liggen in een slaapzak, en roepen af en toe iets in het Rotterdams. Dealers rijden rondjes op scooters, en een zwarte auto met getinte ramen rijdt stapvoets door de Vijverhofstraat.
 
 ## Missies
@@ -82,6 +84,7 @@ python3 tools/fetch-ortho.py  # luchtfoto
 - **Rotterdams en straattaal**: de woorden en uitdrukkingen (gers, aftaaien, pijppie, geepekop, zeikstraal, juut, de kit, delta, does, dakhaas, bakkie pleur, niet lullen maar poetsen, een snee in z'n neus, bloedverziekend, prakkie, pillendraaier, havenbaron, Roffa) komen uit openbare woordenlijsten (Wikipedia, webwoordenboek.nl, OPEN Rotterdam en andere). De straattaal (faka, mattie, osso, waggie, pata, donnie, barkie, doezoe) is aangeleverd door de maker. Laat het nakijken door een echte Rotterdammer.
 - **Adressen**: ROX, Silvia, Sevinc en Café Reef zijn opgegeven door de maker. Dat Café Reef met houten platen is dichtgetimmerd ook; de reden van de sluiting staat er bewust niet bij, en Gerrit en het luikje zijn verzonnen. Mooie Boules, Dikke Mic, Subway en de Albert Heijn komen uit online gidsen. De NAS staat op Vijverhofstraat 35-37 (hoofdadres volgens de gemeente); volgens een bericht uit 2022 is de nachtopvang mogelijk verhuisd. De ligging komt uit de PDOK Locatieserver.
 - **Merken en zaken** (ROX, Dikke Mic, Mooie Boules, de NAS, Subway, Silvia, Sevinc, Café Reef, Albert Heijn, OQ) worden bij naam genoemd. De borden en kleuren zijn verzonnen, zonder echte logo's. Vraag toestemming voordat de game breed gedeeld wordt, zeker omdat de buurt en de zaken op een grove, overdreven manier worden neergezet.
+- **Hofbogen**: het spoor en de bovenleiding op het dek zijn nagemaakt zoals op het Street View-beeld; of er nog rails liggen en hoe het dek er nu precies uitziet, is niet gecontroleerd. Er rijden in de game geen treinen over.
 - **Echte personen**: bewust weggelaten. De zwervers, verslaafden, dealers en medewerkers zijn verzonnen rollen.
 
 ## Techniek

@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { makeCharacter } from './character.js';
 import { makeCart } from './props.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.8, ...extra });
 let seedV = 4242;
@@ -118,6 +119,8 @@ const pathLen = (p) => p.reduce((s, q, i) => (i ? s + Math.hypot(q[0] - p[i - 1]
 export function buildAgnieseWorld(g) {
   const out = {};
   try { out.rox = buildRoxSign(g); } catch (e) { console.warn('ROX-bord', e); }
+  try { out.viaduct = buildViaduct(g); } catch (e) { console.warn('viaduct', e); }
+  g.agniese = out;
   try { out.reef = buildReef(g); } catch (e) { console.warn('Café Reef', e); }
   try { out.rotzooi = buildRotzooi(g); } catch (e) { console.warn('rotzooi', e); }
   try { out.zwervers = buildZwervers(g); } catch (e) { console.warn('zwervers', e); }
@@ -152,6 +155,270 @@ function buildRoxSign(g) {
   return { frame: f };
 }
 
+// ------------------------------------------------------------ het spoorviaduct (Hofpleinlijn, de Hofbogen)
+// In de BGT staat het viaduct als lange smalle strook 'overbruggingsdeel'; de panden in de bogen staan in de 3D BAG
+// als lage blokken van ongeveer 6 meter. Hier komt het dek erbovenop: een betonnen plaat op ongeveer de hoogte van
+// de eerste verdieping, met een borstwering, een dubbel spoor op ballast, pijlers waar geen pand onder staat en
+// bogen op de gevels van de panden in de plint. De Teilingerstraat loopt eronderdoor.
+function buildViaduct(g) {
+  const w = g.world;
+  const ci = w.ground.classes.indexOf('brug');
+  if (ci < 0) return null;
+  const rings = [];
+  for (const [c, rs] of w.ground.polys) {
+    if (c !== ci) continue;
+    const r = rs[0]; const pts = [];
+    for (let i = 0; i < r.length; i += 2) { const p = [r[i], r[i + 1]]; if (!pts.length || Math.hypot(p[0] - pts.at(-1)[0], p[1] - pts.at(-1)[1]) > 0.3) pts.push(p); }
+    if (pts.length < 6) continue;
+    const xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]);
+    const diag = Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs));
+    let area = 0; for (let i = 0; i < pts.length; i++) { const [x1, z1] = pts[i], [x2, z2] = pts[(i + 1) % pts.length]; area += x1 * z2 - x2 * z1; }
+    area = Math.abs(area) / 2;
+    // lang en smal: het viaduct (geen gewone brug over een singel)
+    if (diag < 80 || area / diag > 16) continue;
+    rings.push(pts);
+  }
+  if (!rings.length) return null;
+  const DECK = 6.3, SLAB = 0.9, PARA = 1.05;
+  const concrete = new THREE.MeshStandardMaterial({ color: 0xd4c4a4, roughness: 0.9 });
+  const parts = { deck: [], wall: [], ballast: [], rail: [], sleeper: [], plinth: [], arch: [], relief: [], pane: [], shop: [], cornice: [], stone: [], stoneDark: [], mast: [], wire: [] };
+  const lines = [], arches = [];
+  for (const ring of rings) {
+    const y0 = w.groundAt(...ring[Math.floor(ring.length / 2)]);
+    const top = y0 + DECK;
+    // dek: de strook zelf, met een rand eromheen
+    const shape = new THREE.Shape(ring.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const deck = new THREE.ExtrudeGeometry(shape, { depth: SLAB, bevelEnabled: false });
+    deck.rotateX(-Math.PI / 2); deck.translate(0, top - SLAB, 0);
+    parts.deck.push(deck);
+    // hartlijn: de ring in twee lange zijden knippen bij de twee punten die het verst uit elkaar liggen
+    let ia = 0, ib = 0, bd = 0;
+    for (let i = 0; i < ring.length; i++) for (let j = i + 1; j < ring.length; j++) { const d = Math.hypot(ring[i][0] - ring[j][0], ring[i][1] - ring[j][1]); if (d > bd) { bd = d; ia = i; ib = j; } }
+    const sideA = [], sideB = [];
+    for (let k = ia; k !== ib; k = (k + 1) % ring.length) sideA.push(ring[k]); sideA.push(ring[ib]);
+    for (let k = ib; k !== ia; k = (k + 1) % ring.length) sideB.push(ring[k]); sideB.push(ring[ia]);
+    const nearestOn = (chain, x, z) => { let best = null; for (let k = 1; k < chain.length; k++) { const [ax, az] = chain[k - 1], [bx, bz] = chain[k]; const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1; const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2)); const px = ax + dx * t, pz = az + dz * t, d = Math.hypot(x - px, z - pz); if (!best || d < best.d) best = { d, x: px, z: pz }; } return best; };
+    const center = [];
+    let acc = 0;
+    for (let k = 1; k < sideA.length; k++) {
+      const [ax, az] = sideA[k - 1], [bx, bz] = sideA[k];
+      const L = Math.hypot(bx - ax, bz - az);
+      for (let d = (3 - acc % 3) % 3; d < L; d += 3) {
+        const x = ax + (bx - ax) * (d / L), z = az + (bz - az) * (d / L);
+        const o = nearestOn(sideB, x, z);
+        if (o && o.d > 3 && o.d < 30) center.push({ x: (x + o.x) / 2, z: (z + o.z) / 2, width: o.d });
+      }
+      acc += L;
+    }
+    if (center.length < 4) continue;
+    // de hartlijn wat gladder maken
+    const sm = center.map((c, i) => { let sx = 0, sz = 0, sw = 0, n = 0; for (let j = Math.max(0, i - 2); j <= Math.min(center.length - 1, i + 2); j++) { sx += center[j].x; sz += center[j].z; sw += center[j].width; n++; } return { x: sx / n, z: sz / n, width: sw / n }; });
+    lines.push({ ring, center: sm, top });
+    // borstwering langs de lange zijden (niet over de dwarse kopse kanten)
+    for (const chain of [sideA, sideB]) {
+      for (let k = 1; k < chain.length; k++) {
+        const [ax, az] = chain[k - 1], [bx, bz] = chain[k];
+        const L = Math.hypot(bx - ax, bz - az);
+        if (L < 0.5) continue;
+        const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+        // richting van de hartlijn hier
+        let ci2 = 0, cd = Infinity; sm.forEach((c, i) => { const d = Math.hypot(c.x - mx, c.z - mz); if (d < cd) { cd = d; ci2 = i; } });
+        const c0 = sm[Math.max(0, ci2 - 1)], c1 = sm[Math.min(sm.length - 1, ci2 + 1)];
+        const cl = Math.hypot(c1.x - c0.x, c1.z - c0.z) || 1;
+        const cos = Math.abs(((bx - ax) * (c1.x - c0.x) + (bz - az) * (c1.z - c0.z)) / (L * cl));
+        if (cos < 0.75) continue;
+        const wall = new THREE.BoxGeometry(L + 0.05, PARA, 0.28);
+        wall.rotateY(-Math.atan2(bz - az, bx - ax)); wall.translate(mx, top + PARA / 2, mz);
+        parts.wall.push(wall);
+      }
+    }
+    // dubbel spoor op ballast, dwarsliggers, en pijlers waar geen pand onder staat
+    for (let i = 1; i < sm.length; i++) {
+      const a = sm[i - 1], b = sm[i];
+      const L = Math.hypot(b.x - a.x, b.z - a.z);
+      if (L < 0.2) continue;
+      const ux = (b.x - a.x) / L, uz = (b.z - a.z) / L, ang = -Math.atan2(uz, ux);
+      const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+      const half = Math.min(a.width, b.width) / 2;
+      const tracks = half > 4 ? [-1.9, 1.9] : [0];
+      for (const off of tracks) {
+        const tx = mx - uz * off, tz = mz + ux * off;
+        const bal = new THREE.BoxGeometry(L + 0.05, 0.3, 2.9); bal.rotateY(ang); bal.translate(tx, top + 0.15, tz); parts.ballast.push(bal);
+        for (const r of [-0.72, 0.72]) { const rail = new THREE.BoxGeometry(L + 0.05, 0.14, 0.07); rail.rotateY(ang); rail.translate(tx - uz * r, top + 0.42, tz + ux * r); parts.rail.push(rail); }
+        for (let d = 0; d < L; d += 0.65) { const sl = new THREE.BoxGeometry(0.22, 0.12, 2.5); sl.rotateY(ang); sl.translate(a.x + ux * d - uz * off, top + 0.34, a.z + uz * d + ux * off); parts.sleeper.push(sl); }
+      }
+    }
+    // de plint: dicht met bogen en winkelpuien, behalve waar een straat onder het viaduct door loopt
+    const crossing = (x, z, ux, uz) => w.segments.some(([, ax, az, bx, bz]) => {
+      const dx = bx - ax, dz = bz - az, l = Math.hypot(dx, dz) || 1;
+      if (Math.abs((dx * ux + dz * uz) / l) > 0.7) return false; // evenwijdig: de straat ernaast, niet eronderdoor
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (l * l)));
+      return Math.hypot(x - ax - dx * t, z - az - dz * t) < 6;
+    });
+    // welke stukjes van de hartlijn boven een straat liggen
+    const xs = sm.map((c, i) => { if (!i) return false; const a = sm[i - 1], L = Math.hypot(c.x - a.x, c.z - a.z) || 1; return crossing((a.x + c.x) / 2, (a.z + c.z) / 2, (c.x - a.x) / L, (c.z - a.z) / L); });
+    let acc2 = 0, archN = 0;
+    for (let i = 1; i < sm.length; i++) {
+      const a = sm[i - 1], b = sm[i];
+      const L = Math.hypot(b.x - a.x, b.z - a.z); if (L < 0.2) continue;
+      const ux = (b.x - a.x) / L, uz = (b.z - a.z) / L, mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+      if (xs[i]) { acc2 += L; continue; }
+      const width = Math.min(a.width, b.width) - 0.3;
+      const gy = w.groundAt(mx, mz), hgt = top - SLAB - gy;
+      if (hgt < 2) continue;
+      const blk = new THREE.BoxGeometry(L + 0.3, hgt, width); blk.rotateY(-Math.atan2(uz, ux)); blk.translate(mx, gy + hgt / 2, mz);
+      parts.plinth.push(blk);
+      const hw = width / 2;
+      w.addObstacle([[a.x - uz * hw, a.z + ux * hw], [b.x - uz * hw, b.z + ux * hw], [b.x + uz * hw, b.z - ux * hw], [a.x + uz * hw, a.z - ux * hw]]);
+      // bogen aan beide kanten, om de 6,5 meter, met een donkere pui of een verlichte etalage erin
+      for (let d = (6.5 - acc2 % 6.5) % 6.5; d < L; d += 6.5) {
+        const x = a.x + ux * d, z = a.z + uz * d;
+        for (const sd of [-1, 1]) {
+          const nx = -uz * sd, nz = ux * sd;
+          const fx = x + nx * (hw + 0.02), fz = z + nz * (hw + 0.02);
+          const R = 2.0, spring = hgt - R - 1.35;
+          if (spring < 1.6) continue;
+          const yaw = Math.atan2(nx, nz);
+          const ag = new THREE.TorusGeometry(R, 0.17, 6, 18, Math.PI); ag.translate(0, spring, 0.06);
+          const pl = new THREE.BoxGeometry(0.36, spring, 0.14);
+          const p1 = pl.clone(); p1.translate(-R, spring / 2, 0.06); const p2 = pl.clone(); p2.translate(R, spring / 2, 0.06);
+          for (const geo of [ag, p1, p2]) { geo.rotateY(yaw); geo.translate(fx, gy, fz); parts.arch.push(geo.index ? geo.toNonIndexed() : geo); }
+          // pui in de boog
+          const sh = new THREE.Shape(); sh.moveTo(-R + 0.2, 0); sh.lineTo(R - 0.2, 0); sh.lineTo(R - 0.2, spring); sh.absarc(0, spring, R - 0.2, 0, Math.PI, false); sh.lineTo(-R + 0.2, 0);
+          const pg = new THREE.ShapeGeometry(sh, 8); pg.translate(0, 0, 0.03); pg.rotateY(yaw); pg.translate(fx, gy, fz);
+          (archN++ % 3 === 0 ? parts.shop : parts.pane).push(pg);
+          // reliëfpaneel boven de boog, in een lijst
+          const py0 = spring + R + 0.45, ph = hgt - 0.3 - py0;
+          if (ph > 0.35) {
+            const fr = new THREE.BoxGeometry(3.4, ph + 0.2, 0.06); fr.translate(0, py0 + ph / 2, 0.03);
+            const pn = new THREE.BoxGeometry(3.0, ph - 0.12, 0.12); pn.translate(0, py0 + ph / 2, 0.06);
+            const ro = new THREE.BoxGeometry(0.5, 0.5, 0.1); ro.rotateZ(Math.PI / 4); ro.translate(R + 1.25, py0 + ph / 2, 0.05);
+            for (const [geo, k] of [[fr, 'arch'], [pn, 'relief'], [ro, 'relief']]) { geo.rotateY(yaw); geo.translate(fx, gy, fz); parts[k].push(geo); }
+          }
+        }
+      }
+      acc2 += L;
+    }
+    // donkere kroonlijst met consoles onder de rand van het dek, bovenleidingmasten en draden
+    let acc3 = 0, nextMast = 6;
+    for (let i = 1; i < sm.length; i++) {
+      const a = sm[i - 1], b = sm[i];
+      const L = Math.hypot(b.x - a.x, b.z - a.z); if (L < 0.2) continue;
+      const ux = (b.x - a.x) / L, uz = (b.z - a.z) / L, ang = -Math.atan2(uz, ux), mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+      const half = Math.min(a.width, b.width) / 2;
+      for (const sd of [-1, 1]) {
+        const nx = -uz * sd, nz = ux * sd;
+        const cor = new THREE.BoxGeometry(L + 0.06, 0.4, 0.5); cor.rotateY(ang); cor.translate(mx + nx * (half + 0.1), top - 0.2, mz + nz * (half + 0.1)); parts.cornice.push(cor);
+        for (let d = (1.2 - acc3 % 1.2) % 1.2; d < L; d += 1.2) {
+          const c = new THREE.BoxGeometry(0.22, 0.45, 0.34); c.rotateY(ang); c.translate(a.x + ux * d + nx * (half + 0.05), top - 0.62, a.z + uz * d + nz * (half + 0.05)); parts.cornice.push(c);
+        }
+      }
+      const MH = 5.6, mo = Math.max(1.2, half - 0.5);
+      const tracks = half > 4 ? [-1.9, 1.9] : [0];
+      for (const off of tracks) for (const wy of [MH - 0.8, MH - 0.35]) {
+        const wr = new THREE.BoxGeometry(L + 0.05, 0.03, 0.03); wr.rotateY(ang); wr.translate(mx - uz * off, top + wy, mz + ux * off); parts.wire.push(wr);
+      }
+      while (nextMast < acc3 + L) {
+        const d = nextMast - acc3, x = a.x + ux * d, z = a.z + uz * d;
+        for (const sd of [-1, 1]) { const pole = new THREE.BoxGeometry(0.26, MH, 0.26); pole.rotateY(ang); pole.translate(x - uz * mo * sd, top + MH / 2, z + ux * mo * sd); parts.mast.push(pole); }
+        const beam = new THREE.BoxGeometry(0.2, 0.28, 2 * mo + 0.3); beam.rotateY(ang); beam.translate(x, top + MH - 0.12, z); parts.mast.push(beam);
+        for (const off of tracks) { const hang = new THREE.BoxGeometry(0.05, 0.75, 0.05); hang.translate(x - uz * off, top + MH - 0.6, z + ux * off); parts.mast.push(hang); }
+        nextMast += 25;
+      }
+      acc3 += L;
+    }
+    // waar een straat eronderdoor loopt: een grote, vlakke boog op zware pijlers van natuursteen
+    for (let i = 1; i < sm.length;) {
+      if (!xs[i]) { i++; continue; }
+      let j = i; while (j + 1 < sm.length && xs[j + 1]) j++;
+      const S = sm[i - 1], E = sm[j], run = sm.slice(i - 1, j + 1);
+      i = j + 1;
+      const span = Math.hypot(E.x - S.x, E.z - S.z);
+      if (span < 5 || span > 40) continue;
+      const ux = (E.x - S.x) / span, uz = (E.z - S.z) / span, ang = -Math.atan2(uz, ux);
+      const width = Math.min(...run.map((c) => c.width)) - 0.3;
+      const gy = Math.min(w.groundAt(S.x, S.z), w.groundAt(E.x, E.z));
+      const H = top - SLAB - gy;
+      if (H < 3.5) continue;
+      const sp = span - 0.6, p0x = S.x + ux * 0.3, p0z = S.z + uz * 0.3;
+      arches.push({ x: (S.x + E.x) / 2, z: (S.z + E.z) / 2, ux, uz, span });
+      const rise = Math.min(2, sp * 0.12), hs = H - 0.7 - rise;
+      const Rr = (sp * sp / 4 + rise * rise) / (2 * rise), cx = sp / 2, cy = hs + rise - Rr;
+      const t1 = Math.atan2(hs - cy, sp / 2), t2 = Math.PI - t1;
+      // het boogveld boven de opening, dwars door het hele viaduct (dat geeft ook de onderkant van de boog)
+      const sh = new THREE.Shape(); sh.moveTo(0, hs); sh.lineTo(0, H); sh.lineTo(sp, H); sh.lineTo(sp, hs); sh.absarc(cx, cy, Rr, t1, t2, false);
+      const place = (geo, z0) => { geo.translate(0, 0, z0); geo.rotateY(ang); geo.translate(p0x, gy, p0z); return geo; };
+      parts.plinth.push(place(new THREE.ExtrudeGeometry(sh, { depth: width, bevelEnabled: false, curveSegments: 28 }), -width / 2));
+      // boogrand aan beide kanten
+      const band = new THREE.Shape();
+      band.moveTo(cx + Rr * Math.cos(t1), cy + Rr * Math.sin(t1)); band.absarc(cx, cy, Rr, t1, t2, false);
+      band.lineTo(cx + (Rr + 0.45) * Math.cos(t2), cy + (Rr + 0.45) * Math.sin(t2)); band.absarc(cx, cy, Rr + 0.45, t2, t1, true);
+      for (const z0 of [width / 2, -width / 2 - 0.12]) parts.arch.push(place(new THREE.ExtrudeGeometry(band, { depth: 0.12, bevelEnabled: false, curveSegments: 28 }), z0));
+      // sluitsteen
+      for (const z0 of [width / 2 + 0.06, -width / 2 - 0.06]) { const ks = new THREE.BoxGeometry(0.7, 0.75, 0.24); ks.translate(sp / 2, hs + rise + 0.25, 0); parts.relief.push(place(ks, z0)); }
+      // pijlers: blokken met diepe voegen (rustica), een kern en een dekplaat
+      for (const [px, pz] of [[S.x - ux * 0.6, S.z - uz * 0.6], [E.x + ux * 0.6, E.z + uz * 0.6]]) {
+        const pw = width + 0.5;
+        const core = new THREE.BoxGeometry(1.8, hs + 0.3, pw); core.rotateY(ang); core.translate(px, gy + (hs + 0.3) / 2, pz); parts.stoneDark.push(core);
+        for (let y = 0, n = 0; y < hs - 0.3; y += 0.7, n++) {
+          const blk = new THREE.BoxGeometry(1.94 + (n % 2) * 0.08, 0.6, pw + 0.14 + (n % 2) * 0.08); blk.rotateY(ang); blk.translate(px, gy + y + 0.32, pz); parts.stone.push(blk);
+        }
+        const cap = new THREE.BoxGeometry(2.15, 0.32, pw + 0.4); cap.rotateY(ang); cap.translate(px, gy + hs + 0.14, pz); parts.stone.push(cap);
+        const hx = 0.95, hz = pw / 2 + 0.1;
+        w.addObstacle([[px + ux * hx - uz * hz, pz + uz * hx + ux * hz], [px - ux * hx - uz * hz, pz - uz * hx + ux * hz], [px - ux * hx + uz * hz, pz - uz * hx - ux * hz], [px + ux * hx + uz * hz, pz + uz * hx - ux * hz]]);
+      }
+    }
+  }
+  const mats = {
+    deck: concrete, wall: concrete, plinth: new THREE.MeshStandardMaterial({ color: 0xdacaaa, roughness: 0.95 }), arch: new THREE.MeshStandardMaterial({ color: 0xc2b090, roughness: 0.9 }),
+    relief: new THREE.MeshStandardMaterial({ color: 0xe6d9bd, roughness: 0.85 }), cornice: new THREE.MeshStandardMaterial({ color: 0x4b4540, roughness: 0.8 }),
+    stone: new THREE.MeshStandardMaterial({ color: 0x96938d, roughness: 0.95 }), stoneDark: new THREE.MeshStandardMaterial({ color: 0x5f5d59, roughness: 1 }),
+    mast: new THREE.MeshStandardMaterial({ color: 0x7b4a2c, roughness: 0.75, metalness: 0.3 }), wire: new THREE.MeshStandardMaterial({ color: 0x2b2927, roughness: 0.6 }),
+    pane: new THREE.MeshStandardMaterial({ color: 0x1d2328, roughness: 0.15, metalness: 0.5 }),
+    shop: new THREE.MeshStandardMaterial({ color: 0xe8d9b8, emissive: 0x6b5530, emissiveIntensity: 0.5, roughness: 0.4 }),
+    ballast: new THREE.MeshStandardMaterial({ color: 0x6f6a63, roughness: 1 }), rail: new THREE.MeshStandardMaterial({ color: 0x8a8580, metalness: 0.7, roughness: 0.4 }),
+    sleeper: new THREE.MeshStandardMaterial({ color: 0x5a4a3c, roughness: 1 }),
+  };
+  const grp = new THREE.Group();
+  for (const [k, geos] of Object.entries(parts)) {
+    if (!geos.length) continue;
+    const norm = geos.map((x) => { const y = x.index ? x.toNonIndexed() : x; for (const a of Object.keys(y.attributes)) if (a !== 'position' && a !== 'normal') y.deleteAttribute(a); return y; });
+    const m = new THREE.Mesh(mergeGeometries(norm, false), mats[k]);
+    m.castShadow = !['rail', 'sleeper', 'wire'].includes(k); m.receiveShadow = true;
+    grp.add(m);
+  }
+  g.scene.add(grp);
+  return { lines, arches, deck: DECK };
+}
+
+// Plek voor een pand in de plint van het viaduct: de lange zijde van de strook die het dichtst bij het adres ligt en
+// naar de opgegeven straat kijkt.
+const inRingV = (px, pz, r) => { let c = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [xi, zi] = r[i], [xj, zj] = r[j]; if ((zi > pz) !== (zj > pz) && px < ((xj - xi) * (pz - zi)) / (zj - zi) + xi) c = !c; } return c; };
+function viaductFrame(g, x, z, streetName) {
+  const v = g.agniese?.viaduct;
+  if (!v) return null;
+  const w = g.world;
+  const st = w.nearestStreet(x, z, streetName) || w.nearestStreet(x, z);
+  let best = null;
+  for (const { ring } of v.lines) {
+    for (let i = 0; i < ring.length; i++) {
+      const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length];
+      const L = Math.hypot(bx - ax, bz - az); if (L < 3) continue;
+      const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / (L * L)));
+      const px = ax + (bx - ax) * t, pz = az + (bz - az) * t;
+      let nx = (bz - az) / L, nz = -(bx - ax) / L;
+      // buitenwaarts (weg van de strook)...
+      if (inRingV(px + nx * 0.4, pz + nz * 0.4, ring)) { nx = -nx; nz = -nz; }
+      // ...en naar de straat toe
+      if (st && (st.x - px) * nx + (st.z - pz) * nz <= 0.5) continue;
+      const d = Math.hypot(x - px, z - pz);
+      if (!best || d < best.d) best = { d, x: px, z: pz, nx, nz, len: L };
+    }
+  }
+  if (!best || best.d > 25) return null;
+  return { x: best.x, z: best.z, y: w.heightAt(best.x + best.nx * 1.5, best.z + best.nz * 1.5), ux: -best.nz, uz: best.nx, nx: best.nx, nz: best.nz, len: best.len, yaw: Math.atan2(best.nx, best.nz) };
+}
+
 // gevel die het dichtst bij een punt ligt (voor adressen waarvan het punt net buiten het pand ligt)
 function nearestFacade(w, x, z) {
   let best = null;
@@ -183,11 +450,12 @@ function buildReef(g) {
   const fac = g.facades, w = g.world;
   const p = w.meta.pois.find((q) => q.id === 'reef');
   if (!p) return null;
-  const f = fac.frameAtAddress(...p.pos, 'Vijverhofstraat') || fac.frameFor(...p.pos) || nearestFacade(w, ...p.pos);
+  // Café Reef zit in de plint van het viaduct, aan de kant van de Vijverhofstraat
+  const f = viaductFrame(g, ...p.pos, 'Vijverhofstraat') || fac.frameAtAddress(...p.pos, 'Vijverhofstraat') || fac.frameFor(...p.pos) || nearestFacade(w, ...p.pos);
   if (!f) return null;
   fac.frames.reef = f;
   const grp = fac.group(f, 0.1);
-  const W = Math.min(Math.max(3.6, f.len - 0.6), 7.5), H = 3.3;
+  const W = Math.min(Math.max(3.6, f.len - 0.6), 6.0), H = 3.3;
   // multiplex platen: verticale planken in verschillende tinten, met schroeven en twee schoren
   const tints = [0xb48c5c, 0xa98252, 0xbf9868, 0x9e7848];
   const nP = Math.round(W / 1.22);
