@@ -22,8 +22,8 @@ const { chromium } = require('playwright');
     const g = window.game, p = g.player;
     // voor het hoekpand Vijverhofstraat 47: ROX op de derde verdieping, Dikke Mic beneden, je poppetje vooraan
     const f = g.facades.frames.rox, V = g.camera.position.constructor, w = g.world;
-    [p.x, p.z] = w.resolve(f.x + f.nx * 4.5 - f.ux * 1.2, f.z + f.nz * 4.5 - f.uz * 1.2, 0.4);
-    const C = [f.x + f.nx * 13 + f.ux * 3, f.z + f.nz * 13 + f.uz * 3];
+    [p.x, p.z] = w.resolve(f.x + f.nx * 4.5 + f.ux * 1.0, f.z + f.nz * 4.5 + f.uz * 1.0, 0.4);
+    const C = [f.x + f.nx * 12 - f.ux * 5, f.z + f.nz * 12 - f.uz * 5];
     p.heading = Math.atan2(C[0] - p.x, C[1] - p.z) + 0.4; p.speed = 0; p.group.visible = true;
     const cy = w.groundAt(C[0], C[1]) + 1.5;
     g.pov = { pos: new V(C[0], cy, C[1]), look: new V(f.x - f.ux * 1, w.groundAt(f.x, f.z) + 5.2, f.z - f.uz * 1), snap: true, steady: true };
@@ -51,13 +51,16 @@ im.resize((960, 540), Image.LANCZOS).save(r'${path.join(root, 'public/laadbeeld-
     const st = await page.evaluate(() => {
       const g = window.game, p = g.player, V = g.camera.position.constructor, w = g.world;
       // staand: camera laag en dichtbij, het ROX-bord en je poppetje samen in de bovenste helft
-      const f = g.facades.frames.rox;
-      [p.x, p.z] = w.resolve(f.x + f.nx * 4 + f.ux * 0.8, f.z + f.nz * 4 + f.uz * 0.8, 0.4);
-      const C = [f.x + f.nx * 11 - f.ux * 1.5, f.z + f.nz * 11 - f.uz * 1.5];
+      // camera ver weg en laag (schuin door de straat), zodat het ROX-bord en je poppetje allebei in de bovenste helft staan
+      const f = g.facades.frames.rox, deg = Math.PI / 180;
+      const C = [f.x + f.nx * 9 - f.ux * 18, f.z + f.nz * 9 - f.uz * 18];
+      const dirF = Math.atan2(f.x - C[0], f.z - C[1]);
+      [p.x, p.z] = w.resolve(C[0] + Math.sin(dirF - 9 * deg) * 8, C[1] + Math.cos(dirF - 9 * deg) * 8, 0.4);
       p.heading = Math.atan2(C[0] - p.x, C[1] - p.z) + 0.45; p.speed = 0; p.group.visible = true;
-      const cy = w.groundAt(C[0], C[1]) + 0.4;
+      const cy = w.groundAt(C[0], C[1]) + 0.35;
       g.camera.fov = 60; g.camera.aspect = innerWidth / innerHeight; g.camera.updateProjectionMatrix();
-      g.pov = { pos: new V(C[0], cy, C[1]), look: new V(f.x, w.groundAt(f.x, f.z) + 7.5, f.z), snap: true, steady: true };
+      const lx = C[0] + Math.sin(dirF - 3 * deg) * 100, lz = C[1] + Math.cos(dirF - 3 * deg) * 100;
+      g.pov = { pos: new V(C[0], cy, C[1]), look: new V(lx, cy + Math.tan(0.5 * deg) * 100, lz), snap: true, steady: true };
       g.clock.getDelta();
       for (let i = 0; i < 3; i++) { g.tickInner(); g.updateCamera(0, true); }
       g.render();

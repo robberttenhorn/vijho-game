@@ -14,8 +14,8 @@ const COATS = [0x3b3f45, 0x5a4632, 0x1f2d3d, 0x6b2e2e, 0x4b5d3a];
 const EYES = [0x4a3222, 0x2f5d8a, 0x3f6b3a, 0x2a1a10];
 const SKIN = [0xf0c8a0, 0xe0ac80, 0xc68642, 0x8d5524, 0xf5d6b4];
 // Rotterdamse kreten en groeten (uit openbare woordenlijsten van het Rotterdams) met vertaling
-const SHOUTS = [['Geepekop!', 'sukkel'], ['Zeikstraal!', 'zeurpiet'], ['Kijk uit, jong!', null], ['Bloedverziekend!', 'heel vervelend']];
-const GREETS = [['Hé jong!', null], ['Gers!', 'tof'], ['Ik ga aftaaien.', 'ik ga weg'], ['Niet lullen maar poetsen!', 'minder praten, meer doen']];
+const SHOUTS = [['Geepekop!', 'sukkel'], ['Zeikstraal!', 'zeurpiet'], ['Kijk uit, mattie!', 'kijk uit, vriend!'], ['Bloedverziekend!', 'heel vervelend']];
+const GREETS = [['Faka mattie!', 'hoe is het, vriend?'], ['Gers!', 'tof'], ['Ik ga aftaaien.', 'ik ga weg'], ['Niet lullen maar poetsen!', 'minder praten, meer doen']];
 
 export class Pedestrians {
   constructor(game, n) {

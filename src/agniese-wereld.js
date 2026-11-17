@@ -13,8 +13,8 @@ const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
 
 // Rotterdamse straatpraat (woorden uit openbare woordenlijsten van het Rotterdams, nog laten nakijken)
 export const ZWERVER_LINES = [
-  'Heb je effe een euro voor me, maat?',
-  'Gers petje, jong. Mag ik hem?',
+  'Faka mattie! Heb je effe een euro voor me?',
+  'Gers petje, mattie. Mag ik hem?',
   'Ik ga zo aftaaien, maar eerst nog een pijppie.',
   'Geepekop! Kijk uit waar je loopt!',
   'Ik ben niet dronken, ik heb gewoon een snee in m\'n neus.',
@@ -23,7 +23,12 @@ export const ZWERVER_LINES = [
   'Ik was vroeger havenbaron. Echt waar. Niet lullen maar poetsen.',
   'Dit is hier een delta, man. Een delta!',
   'Ik heb al drie dagen geen does gehad. Ruik maar.',
-  'Bakkie pleur? Nee? Dan een euro.',
+  'Bakkie pleur? Nee? Dan een euro. Of een donnie.',
+  'Mooie pata, mattie. Zijn ze nieuw? Mag ik ze?',
+  'Ik heb geen osso meer. Dit portiek is m\'n osso.',
+  'Waggie open laten staan? Ik pas er wel op. Voor een donnie.',
+  'Een barkie? Voor een barkie zing ik het Wilhelmus. Achterstevoren.',
+  'Faka? Niks faka. Alles kut, maar wel gers.',
   'Die dakhaas daar is van mij. Afblijven.',
 ];
 
@@ -127,7 +132,7 @@ function buildRoxSign(g) {
   const f = fac.frames.rox || (() => { const p = g.world.meta.pois.find((q) => q.id === 'rox'); return p ? fac.frameFor(...p.pos) : null; })();
   if (!f) return null;
   const grp = fac.group(f, 0.08);
-  // bord op de derde verdieping (ongeveer 9 tot 10 meter hoog), in een neutrale stijl zonder echt logo
+  // bord onder de derde verdieping (ongeveer 9 meter hoog), in een neutrale stijl zonder echt logo
   const c = document.createElement('canvas'); c.width = 1024; c.height = 256;
   const x = c.getContext('2d');
   x.fillStyle = '#111418'; x.fillRect(0, 0, 1024, 256);
@@ -136,15 +141,39 @@ function buildRoxSign(g) {
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
   const mat = new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.25, roughness: 0.4 });
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.05), mat);
-  sign.position.set(0, 9.6, 0.04);
+  sign.position.set(0, 9.25, 0.04);
   grp.add(sign);
-  // drie verlichte kantoorramen eronder: daar wordt hard gewerkt (of gegamed)
+  // drie verlichte kantoorramen op de derde verdieping: daar wordt hard gewerkt (of gegamed)
   for (const sx of [-1.6, 0, 1.6]) {
     const win = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.4), new THREE.MeshStandardMaterial({ color: 0xcfe6ff, emissive: 0x9fc4ff, emissiveIntensity: 0.6, roughness: 0.2 }));
-    win.position.set(sx, 8.15, 0.03); grp.add(win);
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.5, 0.05), std(0x222222)); frame.position.set(sx, 8.15, 0.0); grp.add(frame);
+    win.position.set(sx, 10.75, 0.03); grp.add(win);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.5, 0.05), std(0x222222)); frame.position.set(sx, 10.75, 0.0); grp.add(frame);
   }
   return { frame: f };
+}
+
+// gevel die het dichtst bij een punt ligt (voor adressen waarvan het punt net buiten het pand ligt)
+function nearestFacade(w, x, z) {
+  let best = null;
+  const inRing = (px, pz, r) => { let c = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [xi, zi] = r[i], [xj, zj] = r[j]; if ((zi > pz) !== (zj > pz) && px < ((xj - xi) * (pz - zi)) / (zj - zi) + xi) c = !c; } return c; };
+  for (const fp of w.footprints) {
+    if (fp.maxX < x - 30 || fp.minX > x + 30 || fp.maxZ < z - 30 || fp.minZ > z + 30) continue;
+    const r = fp.ring;
+    for (let i = 0; i < r.length; i++) {
+      const [ax, az] = r[i], [bx, bz] = r[(i + 1) % r.length];
+      const len = Math.hypot(bx - ax, bz - az);
+      if (len < 3) continue;
+      const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / (len * len)));
+      const px = ax + (bx - ax) * t, pz = az + (bz - az) * t, d = Math.hypot(x - px, z - pz);
+      if (best && d >= best.d) continue;
+      let nx = (bz - az) / len, nz = -(bx - ax) / len;
+      if (inRing(px + nx * 0.4, pz + nz * 0.4, r)) { nx = -nx; nz = -nz; }
+      best = { d, x: px, z: pz, nx, nz, len };
+    }
+  }
+  if (!best) return null;
+  const ux = -best.nz, uz = best.nx;
+  return { x: best.x, z: best.z, y: w.heightAt(best.x + best.nx * 1.5, best.z + best.nz * 1.5), ux, uz, nx: best.nx, nz: best.nz, len: best.len, yaw: Math.atan2(best.nx, best.nz) };
 }
 
 // ------------------------------------------------------------ Café Reef (Vijverhofstraat 26): dichtgetimmerd met houten platen
@@ -154,7 +183,7 @@ function buildReef(g) {
   const fac = g.facades, w = g.world;
   const p = w.meta.pois.find((q) => q.id === 'reef');
   if (!p) return null;
-  const f = fac.frameAtAddress(...p.pos, 'Vijverhofstraat') || fac.frameFor(...p.pos);
+  const f = fac.frameAtAddress(...p.pos, 'Vijverhofstraat') || fac.frameFor(...p.pos) || nearestFacade(w, ...p.pos);
   if (!f) return null;
   fac.frames.reef = f;
   const grp = fac.group(f, 0.1);

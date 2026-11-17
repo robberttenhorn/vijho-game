@@ -637,7 +637,8 @@ export async function startParking(g, near, { need = 5, limit = 120, lot: lotId 
     .filter((s) => s.d < 90)
     .sort((a, b) => a.d - b.d);
   const occupied = (x, z, r = 2.0) => cars.cars.concat(cars.traffic).some((c) => !c.mission && Math.hypot(c.x - x, c.z - z) < r);
-  const lat = (s, k) => [s.x + Math.cos(s.heading) * 2.6 * k, s.z - Math.sin(s.heading) * 2.6 * k];
+  // buren: naast elkaar in een vak, of bij fileparkeren (langs de stoep) voor en achter je
+  const lat = (s, k) => (s.parallel ? [s.x + Math.sin(s.heading) * 6.0 * k, s.z + Math.cos(s.heading) * 6.0 * k] : [s.x + Math.cos(s.heading) * 2.6 * k, s.z - Math.sin(s.heading) * 2.6 * k]);
   const free = lot.filter((s) => !occupied(s.x, s.z));
   if (free.length < 3) return { none: true };
   // auto voor de speler aan de rand van de parkeerplaats

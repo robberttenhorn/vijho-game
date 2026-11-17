@@ -227,7 +227,7 @@ class Game {
     // introductie: scherm gedimd en een duidelijke knop, zodat je weet dat je eerst moet doorklikken
     document.body.classList.add('intro');
     await this.ui.dialog('Rotterdam, vrijdag', [
-      { text: 'Welkom in de Agniesebuurt, jong!', nl: null },
+      { text: 'Faka mattie! Welkom in de Agniesebuurt!', nl: 'Hoe is het, vriend? Welkom in de Agniesebuurt!' },
       'Je staat voor ROX aan de Vijverhofstraat. De buurt ligt voor je open: loop, fiets, skate of pak een auto. Let op je spullen, en op de dealers.',
       'Overal zijn missies te doen. Tik op de minikaart rechtsboven om ze allemaal te zien, en kies zelf waar je begint.',
     ]);

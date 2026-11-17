@@ -39,6 +39,44 @@ function makeTrash(kind) {
   return g;
 }
 
+// Parkeerplekken langs de stoep van een straat: om de zes meter, aan beide kanten, net binnen de rand van de rijbaan.
+function curbSpots(w, name) {
+  const p = w.streetPath(name).map(([x, z]) => [x, z]);
+  const out = [];
+  if (p.length < 2) return out;
+  const road = (c) => c === 'rijbaan' || c === 'parkeer' || c === 'klinkers';
+  let acc = 0;
+  for (let k = 1; k < p.length; k++) {
+    const [ax, az] = p[k - 1], [bx, bz] = p[k];
+    const L = Math.hypot(bx - ax, bz - az);
+    if (L < 1) { acc += L; continue; }
+    const ux = (bx - ax) / L, uz = (bz - az) / L;
+    for (let d = 6 - (acc % 6); d < L; d += 6) {
+      const px = ax + ux * d, pz = az + uz * d;
+      for (const side of [-1, 1]) {
+        // een parkeerstrook (BGT 'parkeer') naast de rijbaan, of anders net binnen de rand van de rijbaan
+        let edge = 0, p0 = null, p1 = null;
+        for (let o = 0.5; o < 9; o += 0.25) {
+          const c = w.classAt(px - uz * o * side, pz + ux * o * side);
+          if (c === 'parkeer') { if (p0 === null) p0 = o; p1 = o; }
+          if (!road(c)) break;
+          edge = o;
+        }
+        let off;
+        if (p0 !== null && p1 - p0 >= 1.2) off = (p0 + p1) / 2;
+        else if (edge >= 2.8) off = edge - 1.1;
+        else continue; // te smal om te parkeren
+        const x = px - uz * off * side, z = pz + ux * off * side;
+        if (w.insideBuilding(x, z)) continue;
+        out.push({ x, z, heading: Math.atan2(ux, uz), lot: 'vijverhof', parallel: true });
+      }
+    }
+    acc += L;
+  }
+  // niet vlak bij de kruisingen aan het begin en eind
+  return out.filter((s) => Math.hypot(s.x - p[0][0], s.z - p[0][1]) > 10 && Math.hypot(s.x - p.at(-1)[0], s.z - p.at(-1)[1]) > 10);
+}
+
 // Een paar geparkeerde auto's weghalen rond een punt, zodat er vakken vrij zijn om in te parkeren
 // (in de Vijverhofstraat staat anders alles vol).
 function freeParking(g, near, n = 6, r = 70) {
@@ -86,10 +124,16 @@ export function setupAgniese(m, g, add) {
     const p = w.streetPath('Teilingerstraat');
     if (p.length > 1) { const [x, z] = p[Math.floor(p.length * 0.55)]; add('veger', 'Stadsreiniger', w.resolve(x + 3, z + 3, 0.5), { shirt: 0xff6f00, pants: 0x263238, hair: 0x9e9e9e, coat: 0xff6f00, hat: 'cap', hatColor: 0xff6f00 }); }
   }
-  // buurvrouw die een parkeerplek zoekt in de Vijverhofstraat
+  // parkeerplekken langs de stoep van de Vijverhofstraat (fileparkeren); de BGT heeft hier geen losse vakken
   {
+    const spots = curbSpots(w, 'Vijverhofstraat');
+    w.parkingSpots.push(...spots);
+    m.vijverhofSpots = spots.length;
+    // buurvrouw die een plek zoekt, op de stoep halverwege de vakken
+    const mid = spots[Math.floor(spots.length / 2)];
     const p = w.streetPath('Vijverhofstraat');
-    if (p.length > 1) { const [x, z] = p[Math.floor(p.length * 0.3)]; add('parkeer', 'Buurvrouw met sleutels', w.resolve(x + 3.5, z - 2.5, 0.5), { shirt: 0xad1457, pants: 0x37474f, hair: 0xbdbdbd, female: true, hairStyle: 'bun', glasses: true, coat: 0x6d4c41 }); }
+    const at = mid ? [mid.x, mid.z] : p.length > 1 ? p[Math.floor(p.length * 0.3)] : null;
+    if (at) add('parkeer', 'Buurvrouw met sleutels', w.resolve(at[0] + 2, at[1] + 2, 0.5), { shirt: 0xad1457, pants: 0x37474f, hair: 0xbdbdbd, female: true, hairStyle: 'bun', glasses: true, coat: 0x6d4c41 });
   }
   m.agnieseTrash = null;
 }
@@ -150,7 +194,7 @@ export const agnieseHandlers = {
   async nasmw(npc, N, ui, g) {
     if (this.active?.id === 'nachtopvang') { await ui.dialog(N, [`Nog ${g.followers.length - g.followersJoined()} slapers. Over een paar minuten gaat de deur dicht!`]); return; }
     const a = await ui.dialog(N, [
-      'Goedenavond. Om tien uur gaat de nachtopvang dicht, en mijn vaste slapers zwerven nog door de buurt.',
+      R('Faka mattie. Om tien uur gaat de nachtopvang dicht, en mijn vaste slapers hebben geen osso. Ze zwerven nog door de buurt.', 'Hoe is het, vriend? Om tien uur gaat de nachtopvang dicht, en mijn vaste slapers hebben geen huis. Ze zwerven nog door de buurt.'),
       R('Eentje staat bij de Albert Heijn te bedelen, eentje slaapt in een portiek, en Kees heeft weer een snee in z\'n neus.', 'Eentje staat bij de Albert Heijn te bedelen, eentje slaapt in een portiek, en Kees is weer dronken.'),
       'Haal ze op en breng ze in een stoet hierheen. Lopend, ze kunnen je fiets niet bijhouden. En niet ademen in hun buurt.',
     ], ['Ik haal ze op', 'Ik heb een gevoelige neus']);
@@ -181,6 +225,7 @@ export const agnieseHandlers = {
     const a = await ui.dialog(N, [
       R('Ik ben de juut van deze wijk. En ik ben het zat.', 'Ik ben de politieagent van deze wijk. En ik ben het zat.'),
       'Die gasten op de scooters rijden de hele dag rondjes. Met koffers achterop. Ze bezorgen geen pizza, dat weet ik zeker.',
+      R('Ze tikken een doezoe per dag. Ik verdien een donnie per uur. Dat is toch niet eerlijk, mattie?', 'Ze verdienen duizend euro per dag. Ik verdien tien euro per uur. Dat is toch niet eerlijk, vriend?'),
       'Pak ze voor mij: rij ernaast en tik ze aan. Drie stuks in twee minuten. Ik zou het zelf doen, maar mijn fiets heeft een lekke band. Al sinds 2019.',
     ], ['Ik pak ze!', 'Ik koop er liever wat']);
     if (a !== 0) { await ui.dialog(N, ['Dat heb ik niet gehoord. Doorlopen.']); return; }
@@ -200,7 +245,7 @@ export const agnieseHandlers = {
       g.ui.timer(null);
       if (this.active !== act) return;
       if (ok) {
-        ui.dialog(N, ['Drie dealers in de cel! Eén had een koffer vol frikandelbroodjes. Die nemen we in beslag. Voor het onderzoek.']).then(() => this.complete('dealers', 'Dealers gepakt!'));
+        ui.dialog(N, ['Drie dealers in de cel! Eentje had een barkie in zijn pata verstopt. Een ander had een koffer vol frikandelbroodjes. Die nemen we in beslag. Voor het onderzoek.']).then(() => this.complete('dealers', 'Dealers gepakt!'));
       } else this.fail('Ze zijn ervandoor. Morgen rijden ze weer rondjes.');
     };
     const upd = (dt) => {
@@ -254,7 +299,7 @@ export const agnieseHandlers = {
     };
     g.fragile = () => lose('Boem! Daar gaat een frikandelbroodje.');
     // zwervers komen eropaf
-    if (g.agniese) g.agniese.bait = { steal: () => lose(['"Dank je, maat!" Er is er een weg.', 'Gejat! "Gers broodje, jong."', 'Een zwerver pakt er eentje en rent weg. Nou ja, rent...'][Math.floor(Math.random() * 3)]) };
+    if (g.agniese) g.agniese.bait = { steal: () => lose(['"Dank je, maat!" Er is er een weg.', 'Gejat! "Gers broodje, mattie."', 'Een zwerver pakt er eentje en rent weg. Nou ja, rent...'][Math.floor(Math.random() * 3)]) };
     const cleanup = () => { g.fragile = null; g.dropProp(); if (g.agniese) g.agniese.bait = null; };
     act.cleanup = cleanup;
     const f = g.facades.frames.rox;
@@ -317,12 +362,12 @@ export const agnieseHandlers = {
   async parkeer(npc, N, ui, g) {
     const a = await ui.dialog(N, [
       R('Bloedverziekend is het hier. Ik rij al een half uur rondjes voor een plekkie.', 'Heel erg vervelend is het hier. Ik rij al een half uur rondjes voor een parkeerplek.'),
-      'Parkeer jij mijn auto? Drie keer in een vak in de Vijverhofstraat. En geen deuk! Mijn man telt de deuken. Hij heeft er een schriftje voor.',
+      R('Parkeer jij m\'n waggie? Drie keer langs de stoep in de Vijverhofstraat. En geen deuk! Mijn man telt de deuken. Hij heeft er een schriftje voor.', 'Parkeer jij mijn auto? Drie keer langs de stoep in de Vijverhofstraat. En geen deuk! Mijn man telt de deuken. Hij heeft er een schriftje voor.'),
     ], ['Geef de sleutels', 'Ik heb geen rijbewijs']);
     if (a !== 0) { await ui.dialog(N, ['Geen rijbewijs? In deze straat heeft niemand een rijbewijs, dat houdt ze ook niet tegen.']); return; }
-    this.setActive('inparkeren', 'Inparkeren zonder deuk', 'Rij de groene auto in het gele vak en sta even stil. Drie vakken. Eén botsing en het is mislukt.', 'Ingeparkeerd: 0 / 3');
+    this.setActive('inparkeren', 'Inparkeren zonder deuk', 'Fileparkeren: rij de groene auto in het gele vak langs de stoep en sta even stil. Drie keer. Eén botsing en het is mislukt.', 'Ingeparkeerd: 0 / 3');
     freeParking(g, [npc.pos.x, npc.pos.z], 6);
-    const r = await startParking(g, [npc.pos.x, npc.pos.z], { need: 3, limit: 150 });
+    const r = await startParking(g, [npc.pos.x, npc.pos.z], { need: 3, limit: 150, lot: this.vijverhofSpots ? 'vijverhof' : null });
     if (!r || this.active?.id !== 'inparkeren') return;
     if (r.none) { await ui.dialog(N, ['Hm, alles staat vol. Natuurlijk. Kom straks maar terug.']); this.abort(); return; }
     if (r.ok && !r.bumps) {
@@ -390,7 +435,7 @@ export const agnieseHandlers = {
   // ---------------------------------------------- Dikke Mic: karaoke
   async waard(npc, N, ui, g) {
     const night = g.night > 0.5;
-    const a = await ui.dialog(N, [night ? 'Nog een rondje karaoke? De microfoon is nog warm.' : 'Welkom in Dikke Mic! Karaoke, spelletjes en eten. Zin om te zingen?'], [night ? 'Nog eentje (tot morgenochtend)' : 'Geef die microfoon!', 'Nee, dank je']);
+    const a = await ui.dialog(N, [night ? 'Nog een rondje karaoke? De microfoon is nog warm.' : R('Faka mattie! Welkom in Dikke Mic. Karaoke, spelletjes en eten. Zin om te zingen?', 'Hoe is het, vriend? Welkom in Dikke Mic. Karaoke, spelletjes en eten. Zin om te zingen?')], [night ? 'Nog eentje (tot morgenochtend)' : 'Geef die microfoon!', 'Nee, dank je']);
     if (a !== 0) return;
     let sing = !this.done.has('karaoke');
     if (!sing) sing = (await ui.dialog(N, ['Zing je nog een keer? Het buurtlied, op verzoek van de vaste klant.'], ['Ja, zingen!', 'Nee, gewoon een pilsje'])) === 0;
@@ -406,7 +451,7 @@ export const agnieseHandlers = {
       if (!r || this.active?.id !== 'karaoke') return;
       this.active = null;
       if (!r.ok) { await ui.dialog(N, [`${Math.round(r.pct * 100)} procent... De buren bonken op de muur. En dat zijn zwervers, die zijn wat gewend.`]); this.refresh(); return; }
-      await ui.dialog(N, [`${Math.round(r.pct * 100)} procent! De zaal staat op de tafels. Dit was gers, jong.`]);
+      await ui.dialog(N, [`${Math.round(r.pct * 100)} procent! De zaal staat op de tafels. Dit was gers, mattie.`]);
     }
     await g.drinkPils();
     await ui.dialog(N, [R('Proost! Op Roffa!', 'Proost! Op Rotterdam!')]);

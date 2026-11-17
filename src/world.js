@@ -754,6 +754,10 @@ export class World {
         .replace('#include <begin_vertex>', `#include <begin_vertex>
           vB = uv; // gevels: uv.x = meters vanaf het begin van de gevel, uv.y = hoogte boven maaiveld
           vType = btype > 1.5 ? 0.0 : btype;
+          // heel steile 'daken' (schuine gevels, zoals bij sommige nieuwbouw in Rotterdam) als gevel tekenen:
+          // de luchtfoto geeft op zo'n bijna verticaal vlak anders een zwarte vlek
+          bool steepRoof = btype > 0.5 && btype < 1.5 && abs(normal.y) < 0.45;
+          if (steepRoof) { vType = 0.0; vB = vec2(position.x * normal.z - position.z * normal.x, position.y + 0.0); }
           // 3 = eigen gevel: lichte steen zonder getekende ramen (Wieldijkje 9); 4 = roodbruine kerkbaksteen zonder getekende ramen (basiliek)
           vNoWin = btype > 3.5 ? 2.0 : (btype > 2.5 ? 1.0 : 0.0);
           // battr: [zaadje + bouwperiode, veilige onderrand, veilige bovenrand, gevelbreedte]
@@ -765,7 +769,9 @@ export class World {
           vWY = position.y;
           float h = fract(vSeed * 7.13);
           // muren: 0 wit pleister, 1 mergel, 2 rode baksteen, 3 bruine baksteen, 4 gele baksteen, 5 grijs
-          if (btype > 3.5) {
+          if (steepRoof) {
+            vMat = 5.0; // schuine gevel: grijs, zonder getekende ramen (geen veilige randen bekend)
+          } else if (btype > 3.5) {
             vMat = 2.0; // basiliek: rode baksteen
           } else if (btype > 2.5) {
             vMat = 4.0; // eigen gevel (Wieldijkje 9): lichte steen, in de fragmentshader nog lichter gemaakt
@@ -914,7 +920,9 @@ export class World {
             if (vNoWin > 0.5 && vNoWin < 1.5) base = srgb(vec3(0.9, 0.88, 0.82)) * (0.82 + 0.45 * dot(base, vec3(0.333)));
             if (vNoWin > 1.5) base *= vec3(0.92, 0.82, 0.78); // iets bruiner
             // plint van hardsteen
-            float plint = (1.0 - smoothstep(vWall.x + 0.5, vWall.x + 0.52, hgt)) * (1.0 - step(0.5, vNoWin) * 0.8);
+            // hooguit een plint van een meter (bij een gevel met een laag bouwdeel ervoor ligt de veilige onderrand soms meters hoog)
+            float plintTop = min(vWall.x, 0.5) + 0.5;
+            float plint = (1.0 - smoothstep(plintTop, plintTop + 0.02, hgt)) * (1.0 - step(0.5, vNoWin) * 0.8);
             base = mix(base, srgb(vec3(0.24, 0.24, 0.25)) * (0.9 + vnoise(wp * 8.0) * 0.2), plint);
 
             // ramen en deuren in een raster van traveeën
