@@ -15,7 +15,9 @@ export const SHOPS = {
   subway: { sign: 'Subway', sub: 'sandwiches', bg: '#00843d', fg: '#ffc20e', type: 'lunchroom', street: 'Teilingerstraat' },
   silvia: { sign: 'Afhaalrestaurant Silvia', sub: 'Surinaams', bg: '#1b5e20', fg: '#fdd835', awning: ['#b71c1c', '#fdd835'], type: 'restaurant', street: 'Teilingerstraat' },
   sevinc: { sign: 'Sevinc Pizza', sub: 'pizza · kebab · kapsalon', bg: '#b71c1c', fg: '#ffffff', awning: ['#b71c1c', '#ffffff'], type: 'grill', street: 'Teilingerstraat' },
-  albertheijn: { sign: 'Albert Heijn', sub: 'supermarkt', bg: '#00a0e2', fg: '#ffffff', type: 'supermarkt', street: 'Eudokiaplein' },
+  // de ingang van winkelcentrum Eudokiaplein, met binnen de Albert Heijn en Kippie
+  albertheijn: { sign: 'Winkelcentrum Eudokiaplein', sub: 'Albert Heijn · Kippie', bg: '#2b3a4a', fg: '#ffffff', type: 'supermarkt', street: 'Eudokiaplein',
+    tenants: [['Albert Heijn', '#00a0e2', '#ffffff'], ['Kippie', '#c62828', '#ffd54f']] },
 };
 
 // Bouwt alle winkels. fac = Facades-instantie (helpers voor bord, luifel, etalage, deur).
@@ -63,6 +65,10 @@ function shopFacade(fac, f, s) {
   fac.shopWindow(g, { w: winW, x: -0.55, h: 1.7, y: 0.7, type: s.type, seed: s.sign.length });
   fac.door(g, { x: w / 2 - 0.6, color: new THREE.Color(s.bg).getHex() });
   const wx = -0.55, inWin = (x, y) => [wx + x * (winW / 2 - 0.15), 0.7 + y, 0.16];
+  // bordjes van de winkels binnen, boven de pui
+  if (s.tenants) s.tenants.forEach(([name, bg, fg], i) => {
+    fac.sign(g, name, { w: Math.min(2.2, w / 2 - 0.3), h: 0.45, x: (i ? 1 : -1) * (w / 4), y: 2.6, z: 0.07, bg, fg, font: '800 120px "Baloo 2", sans-serif' });
+  });
   const add = (m) => { g.add(m); return m; };
 
   switch (s.type) {

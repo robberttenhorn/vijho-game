@@ -33,7 +33,7 @@ Je begint voor ROX Digital Agency aan de Vijverhofstraat 47, in een beige ROX-sh
 | Café Reef (dichtgetimmerd met houten platen) | Vijverhofstraat 26 |
 | Afhaalrestaurant Silvia (Surinaams) | Teilingerstraat 85A |
 | Sevinc Pizza | Teilingerstraat 67C |
-| Albert Heijn | Eudokiaplein 12 |
+| Winkelcentrum Eudokiaplein, met binnen de Albert Heijn en Kippie | Eudokiaplein 12 (ingang) |
 
 Langs de Vijverhofstraat loopt de Hofbogen, het oude spoorviaduct van de Hofpleinlijn, op de hoogte van de eerste verdieping. In de plint zitten panden achter bogen, waaronder het dichtgetimmerde Café Reef. Het viaduct heeft licht beton met reliëfpanelen, een donkere kroonlijst met consoles, bovenleidingmasten en een dubbel spoor. Waar de Teilingerstraat en de andere straten eronderdoor lopen, staat een grote, vlakke boog op zware pijlers van natuursteen. De ligging komt uit de BGT; het uiterlijk is nagemaakt naar een Street View-beeld van de maker.
 
@@ -48,7 +48,8 @@ In de Vijverhofstraat en de Teilingerstraat liggen vuilniszakken, blikjes, pizza
 | Bugs bij ROX: de webwinkel van een klant gaat live; plet de bugs en klik niet op de berichtjes van de klant | ROX Digital Agency |
 | Nachtopvang: haal de slapers op en breng ze in een stoet naar de nachtopvang | NAS |
 | Dealers pakken: rij de dealers op scooters klem en tik ze aan | Teilingerstraat (wijkagent) |
-| Frikandelbroodjes voor de borrel: van de Albert Heijn naar ROX, zonder botsen en langs de hongerige zwervers | Albert Heijn, Eudokiaplein |
+| Frikandelbroodjes voor de borrel: van de Albert Heijn naar ROX, zonder botsen en langs de hongerige zwervers | Albert Heijn, winkelcentrum Eudokiaplein |
+| Frituurvet verversen: vis de troep (sokken, pleisters, een gefrituurde rat) uit het groene vet zonder de verse kip, en breng het oude vet naar de vetcontainer met de ratten op je hielen | Kippie, winkelcentrum Eudokiaplein |
 | Sambal-uitdaging: roti met steeds hetere sambal, drie glazen water | Afhaalrestaurant Silvia |
 | Kebab snijden: alleen het krokante vlees van de rol | Sevinc Pizza |
 | Inparkeren zonder deuk: drie keer in een vak in de Vijverhofstraat | Vijverhofstraat |
@@ -84,11 +85,11 @@ python3 tools/fetch-ortho.py  # luchtfoto
 ## Nog te controleren
 
 - **Rotterdams en straattaal**: de woorden en uitdrukkingen (gers, aftaaien, pijppie, geepekop, zeikstraal, juut, de kit, delta, does, dakhaas, bakkie pleur, niet lullen maar poetsen, een snee in z'n neus, bloedverziekend, prakkie, pillendraaier, havenbaron, Roffa) komen uit openbare woordenlijsten (Wikipedia, webwoordenboek.nl, OPEN Rotterdam en andere). De straattaal (faka, mattie, osso, waggie, pata, donnie, barkie, doezoe) is aangeleverd door de maker. Laat het nakijken door een echte Rotterdammer.
-- **Adressen**: ROX, Silvia, Sevinc en Café Reef zijn opgegeven door de maker. Dat Café Reef met houten platen is dichtgetimmerd ook; de reden van de sluiting staat er bewust niet bij, en Gerrit en het luikje zijn verzonnen. Mooie Boules, Dikke Mic, Subway en de Albert Heijn komen uit online gidsen. De NAS staat op Vijverhofstraat 35-37 (hoofdadres volgens de gemeente); volgens een bericht uit 2022 is de nachtopvang mogelijk verhuisd. De ligging komt uit de PDOK Locatieserver.
-- **Merken en zaken** (ROX, Dikke Mic, Mooie Boules, de NAS, Subway, Silvia, Sevinc, Café Reef, Albert Heijn, OQ) worden bij naam genoemd. De borden en kleuren zijn verzonnen, zonder echte logo's. Vraag toestemming voordat de game breed gedeeld wordt, zeker omdat de buurt en de zaken op een grove, overdreven manier worden neergezet.
+- **Adressen**: ROX, Silvia, Sevinc en Café Reef zijn opgegeven door de maker. Dat Café Reef met houten platen is dichtgetimmerd ook; de reden van de sluiting staat er bewust niet bij, en Gerrit en het luikje zijn verzonnen. Mooie Boules, Dikke Mic, Subway en de Albert Heijn komen uit online gidsen. Dat de ingang van winkelcentrum Eudokiaplein daar zit, met binnen ook Kippie, is opgegeven door de maker. De NAS staat op Vijverhofstraat 35-37 (hoofdadres volgens de gemeente); volgens een bericht uit 2022 is de nachtopvang mogelijk verhuisd. De ligging komt uit de PDOK Locatieserver.
+- **Merken en zaken** (ROX, Dikke Mic, Mooie Boules, de NAS, Subway, Silvia, Sevinc, Café Reef, Albert Heijn, Kippie, OQ) worden bij naam genoemd. De borden en kleuren zijn verzonnen, zonder echte logo's. Vraag toestemming voordat de game breed gedeeld wordt, zeker omdat de buurt en de zaken op een grove, overdreven manier worden neergezet.
 - **Hofbogen**: het spoor en de bovenleiding op het dek zijn nagemaakt zoals op het Street View-beeld; of er nog rails liggen en hoe het dek er nu precies uitziet, is niet gecontroleerd. Er rijden in de game geen treinen over.
 - **Echte personen**: bewust weggelaten. De zwervers, verslaafden, dealers en medewerkers zijn verzonnen rollen.
 
 ## Techniek
 
-Vite + Three.js, geen game-engine. De buurt (zwervers, dealers, rotzooi, graffiti, het ROX-bord) staat in `src/agniese-wereld.js`, de missies in `src/agniese.js` en de nieuwe minispellen (sambal, karaoke, bugs, jeu de boules, broodje beleggen, klopcode) in `src/agniese-skills.js`.
+Vite + Three.js, geen game-engine. De buurt (zwervers, dealers, rotzooi, graffiti, het ROX-bord) staat in `src/agniese-wereld.js`, de missies in `src/agniese.js` en de nieuwe minispellen (sambal, karaoke, bugs, jeu de boules, broodje beleggen, klopcode, de frituur van Kippie) in `src/agniese-skills.js`.

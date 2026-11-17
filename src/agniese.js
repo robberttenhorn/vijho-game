@@ -5,12 +5,43 @@
 import * as THREE from 'three';
 import { startGyros } from './skills2.js';
 import { startParking } from './skills.js';
-import { startSambal, startKaraoke, startBugs, startBoules, startSub, startKlopcode } from './agniese-skills.js';
-import { makeJunkie } from './agniese-wereld.js';
+import { startSambal, startKaraoke, startBugs, startBoules, startSub, startKlopcode, startFrituur } from './agniese-skills.js';
+import { makeJunkie, makeRat } from './agniese-wereld.js';
 
 // Rotterdamse zin met Nederlandse vertaling
 const R = (text, nl) => ({ text, nl });
 const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, ...extra });
+
+// emmer met twintig liter groen frituurvet, met een kippenpoot die bovendrijft
+function makeVetEmmer() {
+  const g = new THREE.Group();
+  const pail = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.32, 16, 1, true), std(0xb0b6ba, { metalness: 0.5, roughness: 0.4, side: THREE.DoubleSide }));
+  pail.position.y = 0.16; g.add(pail);
+  const bottom = new THREE.Mesh(new THREE.CircleGeometry(0.14, 16), std(0x8f9599)); bottom.rotation.x = -Math.PI / 2; bottom.position.y = 0.005; g.add(bottom);
+  const fat = new THREE.Mesh(new THREE.CircleGeometry(0.162, 18), std(0x6b6a1e, { roughness: 0.15, metalness: 0.2 })); fat.rotation.x = -Math.PI / 2; fat.position.y = 0.28; g.add(fat);
+  const bone = new THREE.Mesh(new THREE.CapsuleGeometry(0.018, 0.08, 4, 6), std(0xc9a24a)); bone.rotation.z = Math.PI / 2.4; bone.position.set(0.04, 0.012, 0); fat.add(bone);
+  bone.rotation.x = Math.PI / 2;
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.008, 6, 20, Math.PI), std(0x555555, { metalness: 0.7 })); handle.position.y = 0.32; g.add(handle);
+  // druipers langs de rand
+  for (let i = 0; i < 5; i++) { const d = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.08 + Math.random() * 0.08, 0.006), std(0x6b6a1e, { roughness: 0.2 })); const a = i * 1.3; d.position.set(Math.sin(a) * 0.162, 0.26, Math.cos(a) * 0.162); d.rotation.y = a; g.add(d); }
+  g.userData.fat = fat;
+  return g;
+}
+// grijze container met een bord VET erop en vetvlekken eromheen
+function makeVetContainer() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.15, 0.9), std(0x5f6b62, { roughness: 0.6 })); body.position.y = 0.6; g.add(body);
+  const lid = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.08, 0.96), std(0x3e4741)); lid.position.y = 1.22; lid.rotation.x = -0.25; lid.position.z = -0.08; g.add(lid);
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128; const x = c.getContext('2d');
+  x.fillStyle = '#f2c94c'; x.fillRect(0, 0, 256, 128); x.fillStyle = '#1b1b1b'; x.font = '900 72px "Baloo 2", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('VET', 128, 58);
+  x.font = '600 20px Inter, sans-serif'; x.fillText('alleen frituurvet!', 128, 104);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.35), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 })); sign.position.set(0, 0.75, 0.452); g.add(sign);
+  for (let i = 0; i < 4; i++) { const v = new THREE.Mesh(new THREE.CircleGeometry(0.25 + Math.random() * 0.3, 14), std(0x4d4a16, { roughness: 0.1, metalness: 0.2 })); v.rotation.x = -Math.PI / 2; v.position.set((Math.random() - 0.5) * 1.8, 0.012 + i * 0.002, 0.6 + Math.random() * 0.6); g.add(v); }
+  for (const sx of [-0.5, 0.5]) { const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 12), std(0x111111)); wh.rotation.z = Math.PI / 2; wh.position.set(sx, 0.09, -0.35); g.add(wh); }
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
 
 // stapel frikandelbroodjes op een bakplaat (elke botsing of zwerver kost er een)
 function makeBroodjesTray() {
@@ -113,7 +144,9 @@ export function setupAgniese(m, g, add) {
   { const s = S('nas', 2.8); if (s) add('nasmw', 'Medewerker van de NAS', s, { shirt: 0xef6c00, pants: 0x37474f, hair: 0x5d4037, coat: 0xef6c00 }); }
   { const s = S('silvia', 2.6); if (s) add('silvia', 'Achter de toonbank bij Silvia', s, { shirt: 0xfdd835, pants: 0x1b5e20, hair: 0x111111, female: true, hairStyle: 'bun', apron: 0xc62828, skin: 0x8d5524 }); }
   { const s = S('sevinc', 2.6); if (s) add('sevinc', 'De pizzabakker van Sevinc', s, { shirt: 0xffffff, pants: 0x222222, hair: 0x111111, apron: 0xd84315, beard: true, skin: 0xc68642 }); }
-  { const s = S('albertheijn', 3.2); if (s) add('ahmw', 'Bakker van de Albert Heijn', s, { shirt: 0x00a0e2, pants: 0x263238, hair: 0xa1887f, apron: 0xffffff, hat: 'chef' }); }
+  { const s = S('albertheijn', 3.2, -1.6); if (s) add('ahmw', 'Bakker van de Albert Heijn', s, { shirt: 0x00a0e2, pants: 0x263238, hair: 0xa1887f, apron: 0xffffff, hat: 'chef' }); }
+  // Kippie zit ook in het winkelcentrum: de frituurbaas staat even buiten, met een schort vol vetvlekken
+  { const s = S('albertheijn', 3.2, 2.2); if (s) add('kippie', 'Frituurbaas van Kippie', s, { shirt: 0xc62828, pants: 0x263238, hair: 0x2b1d14, apron: 0xe9dcae, hat: 'cap', hatColor: 0xffd54f, build: 1.4, beard: true }); }
   { const s = S('subway', 2.6, 1.2); if (s) add('subway', 'Medewerker van Subway', s, { shirt: 0x00843d, pants: 0x1b1b1b, hair: 0x3e2723, hat: 'cap', hatColor: 0xffc20e }); }
   // vaste klant van Café Reef, op een bierkrat voor de dichtgetimmerde deur
   { const s = S('reef', 2.4, 2.0); if (s) add('reefklant', 'Vaste klant van Café Reef', s, { shirt: 0x5d4037, pants: 0x37474f, hair: 0x9e9e9e, beard: true, coat: 0x3e2723, hat: 'cap', hatColor: 0x1d3b4f, build: 1.2 }); }
@@ -145,7 +178,8 @@ export function agnieseItems(n) {
     { id: 'rox', npc: n.rox, title: 'Bugs bij ROX', place: 'ROX Digital Agency, Vijverhofstraat 47', desc: 'De webwinkel van een klant gaat zo live, maar zit vol bugs. Plet ze voordat de klant belt.' },
     { id: 'nachtopvang', npc: n.nasmw, title: 'Nachtopvang', place: 'NAS, Vijverhofstraat 35-37', desc: 'Het wordt donker. Haal de vaste slapers op en breng ze in een stoet naar de nachtopvang.' },
     { id: 'dealers', npc: n.agent, title: 'Dealers pakken', place: 'Teilingerstraat', desc: 'Drie dealers op scooters. Rij ze klem en tik ze aan voordat ze ervandoor gaan.' },
-    { id: 'frikandel', npc: n.ahmw, title: 'Frikandelbroodjes voor de borrel', place: 'Albert Heijn, Eudokiaplein', desc: 'Breng de frikandelbroodjes naar ROX. Pas op voor botsingen en voor hongerige zwervers.' },
+    { id: 'kippie', npc: n.kippie, title: 'Frituurvet verversen', place: 'Kippie, winkelcentrum Eudokiaplein', desc: 'Vis de troep uit de groene frituur van Kippie en breng het oude vet naar de vetcontainer. De ratten ruiken het.' },
+    { id: 'frikandel', npc: n.ahmw, title: 'Frikandelbroodjes voor de borrel', place: 'Albert Heijn, winkelcentrum Eudokiaplein', desc: 'Breng de frikandelbroodjes naar ROX. Pas op voor botsingen en voor hongerige zwervers.' },
     { id: 'sambal', npc: n.silvia, title: 'Sambal-uitdaging', place: 'Afhaalrestaurant Silvia, Teilingerstraat', desc: 'Roti met sambal, steeds heter. Eet alles op zonder vuur te spuwen.' },
     { id: 'kebab', npc: n.sevinc, title: 'Kebab snijden', place: 'Sevinc Pizza, Teilingerstraat', desc: 'Snijd alleen het krokante vlees van de rol.' },
     { id: 'inparkeren', npc: n.parkeer, title: 'Inparkeren zonder deuk', place: 'Vijverhofstraat', desc: 'Parkeer drie keer in een vak in de Vijverhofstraat. Eén deuk en het is mislukt.' },
@@ -159,7 +193,7 @@ export function agnieseItems(n) {
 
 export const AGNIESE_MISSION_OF = {
   rox: 'rox', nasmw: 'nachtopvang', agent: 'dealers', ahmw: 'frikandel', silvia: 'sambal', sevinc: 'kebab',
-  parkeer: 'inparkeren', veger: 'rotzooi', waard: 'karaoke', boules: 'boules', subway: 'subway', reefklant: 'reef',
+  parkeer: 'inparkeren', veger: 'rotzooi', waard: 'karaoke', boules: 'boules', subway: 'subway', reefklant: 'reef', kippie: 'kippie',
 };
 
 // ------------------------------------------------------------ missies
@@ -312,6 +346,121 @@ export const agnieseHandlers = {
       ]);
       this.complete('frikandel', 'Frikandelbroodjes bezorgd!');
     }, (msg) => { cleanup(); this.fail(msg || 'Te laat. De borrel is al begonnen met chips.'); });
+  },
+
+  // ---------------------------------------------- Kippie: de frituur leegvissen en het oude vet wegbrengen
+  async kippie(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      'Welkom bij Kippie! Kip, kip, kip, en voor de vegetariërs: kip.',
+      'Probleempje. Het frituurvet is niet meer ververst sinds de vorige baas. Het is groen. Het borrelt ook als de pan uit staat.',
+      'Gisteren viste een klant er een kunstgebit uit. Hij was er niet eens blij mee: het was niet het zijne.',
+      R('Vis jij de troep eruit? Laat de verse kip liggen, die is voor de klanten. Niet lullen maar poetsen!', 'Vis jij de troep eruit? Laat de verse kip liggen, die is voor de klanten. Minder praten, meer doen!'),
+    ], ['Schepnet erin!', 'Ik ga wel naar de AH']);
+    if (a !== 0) { await ui.dialog(N, ['De AH? Daar haal ik mijn vet ook. Dat verklaart een hoop, eigenlijk.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('walk');
+    this.setActive('kippie', 'Frituurvet verversen', 'Vis de troep uit de frituur. Laat de verse kip liggen!', '');
+    const r = await startFrituur(g, { need: 12, maxMistakes: 3, limit: 50 });
+    if (!r || this.active?.id !== 'kippie') return;
+    if (!r.ok) {
+      await ui.dialog(N, [r.why === 'kip' ? 'Je hebt alle verse kip eruit gevist! Wat moet ik nu verkopen? Die sok?' : 'Te langzaam. Het vet heeft intussen een eigen wil gekregen.']);
+      this.fail(r.why === 'kip' ? 'Te veel verse kip uit de frituur gevist.' : 'De frituur is niet schoon.');
+      return;
+    }
+    // stap 2: twintig liter oud vet naar de vetcontainer, met de ratten op je hielen
+    const w = g.world;
+    const p = w.streetPath('Teilingerstraat');
+    const f = g.facades.frames.albertheijn;
+    const here = [g.player.x, g.player.z];
+    let spot = null;
+    if (p.length > 1) {
+      // een plek in de Teilingerstraat op een flink stuk lopen (60 tot 140 meter), op de stoep
+      let bd = Infinity;
+      for (let i = 0; i < p.length; i++) { const d = Math.hypot(p[i][0] - here[0], p[i][1] - here[1]); const score = Math.abs(d - 100); if (d > 60 && d < 140 && score < bd) { bd = score; spot = p[i]; } }
+      if (!spot) spot = p[Math.floor(p.length / 2)];
+    }
+    if (!spot && f) spot = [f.x + f.nx * 30, f.z + f.nz * 30];
+    const dest = w.resolve(spot[0] + 4, spot[1] + 4, 0.8);
+    await ui.dialog(N, [
+      `Kijk eens wat eruit kwam! Het mooiste: ${r.best}. Die hang ik bij de kassa, als waarschuwing.`,
+      'Nu het oude vet. Twintig liter, in een emmer zonder deksel. Breng het naar de vetcontainer in de Teilingerstraat.',
+      R('Pas op: de ratten ruiken het op een kilometer. Laat er geen een in de emmer springen, en niet botsen. Anders gutst het eruit.', 'Pas op: de ratten ruiken het van heel ver. Laat er geen in de emmer springen, en niet botsen, anders klotst het eruit.'),
+    ]);
+    if (this.active?.id !== 'kippie') return;
+    this.setActive('kippie', 'Frituurvet verversen', 'Breng de emmer oud vet naar de vetcontainer in de Teilingerstraat. Niet botsen, en laat geen rat in de emmer springen.', 'Vet in de emmer: 3 / 3');
+    const act = this.active;
+    act.noVehicles = true;
+    const bucket = makeVetEmmer();
+    g.holdProp(bucket);
+    // de vetcontainer
+    const bin = makeVetContainer();
+    bin.position.set(dest[0], w.groundAt(dest[0], dest[1]), dest[1]);
+    bin.rotation.y = Math.atan2(here[0] - dest[0], here[1] - dest[1]);
+    g.scene.add(bin);
+    let lives = 3, cool = 0, wave = 0;
+    const rats = [];
+    const spawnRat = () => {
+      const m = makeRat(); m.scale.setScalar(1.25);
+      const a2 = Math.random() * Math.PI * 2, d = 10 + Math.random() * 6;
+      let x = g.player.x + Math.cos(a2) * d, z = g.player.z + Math.sin(a2) * d;
+      [x, z] = w.resolve(x, z, 0.2);
+      m.position.set(x, w.groundAt(x, z), z);
+      g.scene.add(m);
+      rats.push({ m, speed: 3.1 + Math.random() * 1.2 + Math.min(0.6, rats.length * 0.1), ph: Math.random() * 6 });
+    };
+    for (let i = 0; i < 3; i++) spawnRat();
+    const hit = (why) => {
+      if (cool > 0) return;
+      cool = 1.2; lives--;
+      g.sfx?.play('splat');
+      g.ui.toast(why, 2000);
+      this.progress(`Vet in de emmer: ${lives} / 3`);
+      const top = bucket.userData.fat; if (top) top.position.y -= 0.06;
+      if (lives <= 0) { cleanup(); this.fail('De emmer is leeg. De halve Teilingerstraat glimt nu van het vet.'); }
+    };
+    g.fragile = () => hit('Boem! Een golf groen vet over je schoenen.');
+    const upd = (dt) => {
+      cool = Math.max(0, cool - dt);
+      wave += dt;
+      if (wave > 7 && rats.length < 8) { wave = 0; spawnRat(); }
+      for (const r2 of rats) {
+        const m = r2.m, dx = g.player.x - m.position.x, dz = g.player.z - m.position.z, d = Math.hypot(dx, dz);
+        r2.ph += dt;
+        if (d < 0.75) {
+          hit(['Een rat springt in de emmer en zwemt een baantje.', 'Plons! Een rat neemt een vetbad.', 'Een rat klimt langs je been omhoog, recht de emmer in.', '"Dat is Henk!" roept iemand. Henk zit in de emmer.'][Math.floor(Math.random() * 4)]);
+          // de rat schiet weg en komt later terug
+          const a3 = Math.random() * Math.PI * 2; const [x, z] = w.resolve(g.player.x + Math.cos(a3) * 14, g.player.z + Math.sin(a3) * 14, 0.2);
+          m.position.set(x, w.groundAt(x, z), z);
+          continue;
+        }
+        const step = Math.min(d, r2.speed * dt);
+        const [nx, nz] = w.resolve(m.position.x + (dx / d) * step, m.position.z + (dz / d) * step, 0.15);
+        m.position.set(nx, w.groundAt(nx, nz), nz);
+        m.rotation.y = Math.atan2(dx, dz);
+        m.userData.body.position.y = Math.abs(Math.sin(r2.ph * 28)) * 0.012;
+        m.userData.tail.rotation.y = Math.sin(r2.ph * 14) * 0.35;
+      }
+    };
+    g.updaters.add(upd);
+    const cleanup = () => {
+      g.fragile = null; g.dropProp(); g.updaters.delete(upd);
+      for (const r2 of rats) g.scene.remove(r2.m);
+      rats.length = 0;
+      setTimeout(() => g.scene.remove(bin), 4000);
+    };
+    act.cleanup = cleanup;
+    const dist = Math.hypot(dest[0] - here[0], dest[1] - here[1]);
+    g.setDestination(dest, Math.round(45 + dist / 2.2), async () => {
+      cleanup();
+      await ui.dialog('Bij de vetcontainer', [
+        lives === 3 ? 'Glug, glug, glug. Twintig liter groen vet de container in, zonder één rat erin. Respect.' : 'Glug, glug... plons. Er zat nog een rat in. Die zwemt nu in de container. Hij lijkt het naar zijn zin te hebben.',
+      ]);
+      await ui.dialog(N, [
+        'Vers vet in de frituur! De kip glimt weer goudbruin in plaats van groen.',
+        R('Hier, een gratis emmer kip. Gefrituurd in vers vet. Nou ja, verser. Doe je best, mattie!', 'Hier, een gratis emmer kip. Gefrituurd in vers vet. Nou ja, verser. Goed gedaan, vriend!'),
+      ]);
+      this.complete('kippie', 'Frituur van Kippie ververst!');
+    }, (msg) => { cleanup(); this.fail(msg || 'Te laat. Het vet is in de emmer gestold. Hij staat nu rechtop zonder emmer.'); });
   },
 
   // ---------------------------------------------- Silvia: sambal

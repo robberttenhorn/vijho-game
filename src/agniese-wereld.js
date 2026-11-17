@@ -884,7 +884,7 @@ export function makeTrashBag() {
 }
 
 // ------------------------------------------------------------ ratten die bij de vuilniszakken rondscharrelen en wegschieten als je dichtbij komt
-function makeRat() {
+export function makeRat() {
   const grp = new THREE.Group();
   const fur = std(0x4b4038, { roughness: 0.95 }), pink = std(0xd49a94, { roughness: 0.7 }), black = std(0x050505, { roughness: 0.3 });
   const body = new THREE.Group(); grp.add(body);

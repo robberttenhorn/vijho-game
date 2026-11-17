@@ -489,3 +489,121 @@ export function startKlopcode(g, { rounds = 3 } = {}) {
     parts.update(dt); parts.draw(ctx);
   }, () => ui.close());
 }
+
+// ------------------------------------------------------------ Kippie: de frituur leegvissen
+// Uit het groene, borrelende vet komt van alles bovendrijven. Tik de troep eruit met het schepnet voordat het weer
+// zinkt, maar laat de verse kip liggen: die is voor de klanten. Genoeg troep eruit = gewonnen; te vaak verse kip
+// eruit of de tijd om = mislukt.
+const TROEP = [
+  { e: '🧦', n: 'een sok', p: 10 }, { e: '🩹', n: 'een pleister', p: 10 }, { e: '🦷', n: 'een kies', p: 15 },
+  { e: '🔑', n: 'een sleutelbos', p: 10 }, { e: '📱', n: 'de telefoon van de stagiair', p: 20 }, { e: '🪳', n: 'een kakkerlak', p: 15 },
+  { e: '🦴', n: 'een kippenbot uit 2019', p: 10 }, { e: '🐀', n: 'een rat (gefrituurd)', p: 25 }, { e: '👓', n: 'een bril', p: 15 },
+  { e: '💍', n: 'een trouwring', p: 30 }, { e: '🩲', n: 'een onderbroek', p: 25 }, { e: '🧽', n: 'een sponsje', p: 10 },
+];
+const VERS = [{ e: '🍗', n: 'verse kippenpoot' }, { e: '🍗', n: 'verse kippenpoot' }];
+export function startFrituur(g, { need = 12, maxMistakes = 3, limit = 50 } = {}) {
+  const ui = overlay(g, 'De frituur van Kippie', '<canvas class="mini-canvas"></canvas>',
+    g.input.isTouch ? 'Tik de troep uit het vet voordat het weer zinkt. Laat de verse kip (🍗) liggen!' : 'Klik de troep uit het vet voordat het weer zinkt. Laat de verse kip (🍗) liggen!');
+  const cv = ui.ov.querySelector('canvas'), ctx = cv.getContext('2d');
+  fitCanvas(cv);
+  ui.ov.style.background = '#2a2410';
+  const parts = new Particles();
+  const combo = makeCombo(ui.ov);
+  let t = 0, fished = 0, mistakes = 0, end = null, spawnT = 0.4, score = 0, best = null;
+  const items = []; // { x, y (0..1 binnen het vet), it, good, t, life }
+  const bubbles = Array.from({ length: 40 }, () => ({ x: Math.random(), y: Math.random(), r: 0.3 + Math.random(), s: 0.2 + Math.random() * 0.5 }));
+  let vat = null; // rechthoek van het vet in pixels
+  const hitAt = (px, py) => {
+    if (end || !vat) return;
+    let hit = null, hd = Infinity;
+    for (const o of items) {
+      if (o.gone) continue;
+      const ox = vat.x + o.x * vat.w, oy = vat.y + o.y * vat.h;
+      const d = Math.hypot(px - ox, py - oy);
+      if (d < vat.item * 0.8 && d < hd) { hd = d; hit = o; }
+    }
+    // spetters, ook als je mis tikt
+    parts.spawn(px, py, hit ? 14 : 6, { color: '#9a8f2a', speed: 260, up: 220, size: 4 * devicePixelRatio, shape: 'circle', life: 0.6 });
+    if (!hit) { g.sfx?.play('splash'); return; }
+    hit.gone = true;
+    if (hit.good) {
+      mistakes++; combo.miss(); flash(ui.ov, 'bad'); shake(ui.ov); g.sfx?.play('fail');
+      popText(ui.ov, ['Die was voor een klant!', 'Nee! Verse kip!', 'Die kip moet erin blijven!'][mistakes % 3], 50, 30, 'bad');
+    } else {
+      fished++; score += hit.it.p; if (!best || hit.it.p > best.p) best = hit.it;
+      const c = combo.hit(); g.sfx?.play('pop');
+      popText(ui.ov, `${hit.it.e} ${hit.it.n}${c >= 3 ? ` x${c}` : ''}`, 50, 26, hit.it.p >= 25 ? 'gold' : 'good');
+    }
+  };
+  const pd = (e) => { e.preventDefault(); const r = cv.getBoundingClientRect(); hitAt((e.clientX - r.left) * (cv.width / r.width), (e.clientY - r.top) * (cv.height / r.height)); };
+  cv.addEventListener('pointerdown', pd);
+  const pr = runMini(g, (dt, finish) => {
+    fitCanvas(cv);
+    t += dt;
+    const W = cv.width, H = cv.height, u = Math.min(W, H) / 100;
+    vat = { x: W * 0.12, y: H * 0.3, w: W * 0.76, h: H * 0.42, item: 9 * u };
+    if (!end) {
+      spawnT -= dt;
+      if (spawnT <= 0) {
+        spawnT = Math.max(0.35, 0.9 - t * 0.012) * (0.6 + Math.random() * 0.8);
+        const good = Math.random() < 0.28;
+        const it = good ? VERS[0] : TROEP[Math.floor(Math.random() * TROEP.length)];
+        items.push({ x: 0.08 + Math.random() * 0.84, y: 0.15 + Math.random() * 0.7, it, good, t: 0, life: Math.max(1.1, 2.1 - t * 0.02) });
+      }
+      for (const o of items) { o.t += dt; if (o.t > o.life) o.gone = true; }
+      if (fished >= need) end = { ok: true, fished, mistakes, score, best: best?.n || 'niks' };
+      else if (mistakes >= maxMistakes) end = { ok: false, fished, mistakes, why: 'kip' };
+      else if (t >= limit) end = { ok: false, fished, mistakes, why: 'tijd' };
+      if (end) {
+        if (end.ok) { g.sfx?.play('cheer'); flash(ui.ov, 'gold'); popText(ui.ov, 'Frituur schoon(er)!', 50, 40, 'gold big'); }
+        else popText(ui.ov, end.why === 'kip' ? 'Alle verse kip is weg!' : 'Tijd op!', 50, 40, 'bad big');
+        setTimeout(() => finish(end), 1500);
+      }
+    }
+    for (let i = items.length - 1; i >= 0; i--) if (items[i].gone && items[i].t > items[i].life + 0.4) items.splice(i, 1);
+    ui.score(`${fished} / ${need} troep · verse kip eruit ${mistakes}/${maxMistakes} · ${Math.max(0, limit - t).toFixed(0)} s`);
+    // ---- tekenen: vieze tegels, de frituur, het groene vet
+    ctx.fillStyle = '#d8cfa4'; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = '#b7ab78'; ctx.lineWidth = Math.max(1, 0.3 * u);
+    for (let y = 0; y < H; y += 8 * u) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    for (let x = 0; x < W; x += 8 * u) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    // vetspetters en druipers op de tegels
+    ctx.fillStyle = 'rgba(120,100,20,0.35)';
+    for (let i = 0; i < 18; i++) { const sx = ((i * 137) % 100) / 100 * W, sy = ((i * 61) % 30) / 100 * H; ctx.beginPath(); ctx.ellipse(sx, sy, 1.6 * u, 1.1 * u, 0, 0, 7); ctx.fill(); ctx.fillRect(sx - 0.25 * u, sy, 0.5 * u, (3 + (i % 5)) * u); }
+    // de bak
+    rr(ctx, vat.x - 3 * u, vat.y - 3 * u, vat.w + 6 * u, vat.h + 8 * u, 2 * u); ctx.fillStyle = '#8f9599'; ctx.fill();
+    rr(ctx, vat.x - 1 * u, vat.y - 1 * u, vat.w + 2 * u, vat.h + 2 * u, 1.5 * u); ctx.fillStyle = '#3d3f41'; ctx.fill();
+    const gr = ctx.createLinearGradient(0, vat.y, 0, vat.y + vat.h);
+    gr.addColorStop(0, '#7d7a22'); gr.addColorStop(0.5, '#5d5a17'); gr.addColorStop(1, '#3a3010');
+    ctx.fillStyle = gr; ctx.fillRect(vat.x, vat.y, vat.w, vat.h);
+    // bubbels
+    for (const b of bubbles) {
+      b.y -= b.s * dt * 0.4; if (b.y < 0) { b.y = 1; b.x = Math.random(); }
+      ctx.strokeStyle = 'rgba(220,210,120,0.55)'; ctx.lineWidth = Math.max(1, 0.25 * u);
+      ctx.beginPath(); ctx.arc(vat.x + b.x * vat.w, vat.y + b.y * vat.h, b.r * u, 0, 7); ctx.stroke();
+    }
+    // dingen die bovendrijven: komen op, dobberen, zinken weer
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const o of items) {
+      if (o.gone) continue;
+      const k = Math.min(1, o.t / 0.25) * Math.min(1, (o.life - o.t) / 0.3);
+      const ox = vat.x + o.x * vat.w, oy = vat.y + o.y * vat.h + Math.sin(o.t * 6) * 0.6 * u;
+      ctx.globalAlpha = Math.max(0, k);
+      ctx.fillStyle = 'rgba(40,35,8,0.5)'; ctx.beginPath(); ctx.ellipse(ox, oy + 3 * u, 5 * u * k, 1.4 * u * k, 0, 0, 7); ctx.fill();
+      if (o.good) { ctx.strokeStyle = '#ffd54f'; ctx.lineWidth = 0.5 * u; ctx.beginPath(); ctx.arc(ox, oy, 5.5 * u, 0, 7); ctx.stroke(); }
+      ctx.font = `${7 * u * (0.6 + 0.4 * k)}px sans-serif`;
+      ctx.fillText(o.it.e, ox, oy);
+      ctx.font = `700 ${2.1 * u}px Inter, sans-serif`; ctx.fillStyle = o.good ? '#ffe082' : '#f1ead0';
+      ctx.fillText(o.good ? 'vers!' : o.it.n, ox, oy + 5.5 * u);
+      ctx.globalAlpha = 1;
+    }
+    // bordje
+    ctx.fillStyle = '#c62828'; rr(ctx, W * 0.32, H * 0.08, W * 0.36, H * 0.11, 1.5 * u); ctx.fill();
+    ctx.fillStyle = '#ffd54f'; ctx.font = `800 ${4.4 * u}px "Baloo 2", sans-serif`; ctx.fillText('KIPPIE', W * 0.5, H * 0.12);
+    ctx.fillStyle = '#fff'; ctx.font = `600 ${1.9 * u}px Inter, sans-serif`; ctx.fillText('vet ververst op: ??-??-20??', W * 0.5, H * 0.165);
+    parts.update(dt); parts.draw(ctx);
+  }, () => { cv.removeEventListener('pointerdown', pd); ui.close(); });
+  // voor testen vanuit de console: de dingen in het vet en de tik-functie
+  if (g.minigame) g.minigame.debug = { items, get vat() { return vat; }, hitAt };
+  return pr;
+}
