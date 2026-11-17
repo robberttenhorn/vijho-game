@@ -14,7 +14,7 @@ import { Missions, resetProgress } from './missions.js';
 import { Vehicles, VOLVO_GREY } from './vehicles.js';
 import { Facades } from './facades.js';
 import { volvoSpot38 } from './tuin38.js';
-import { buildBoxmeerWorld } from './boxmeer-wereld.js';
+import { buildAgnieseWorld } from './agniese-wereld.js';
 import { Pedestrians } from './pedestrians.js';
 import { Effects, makeFluitje, makeFinishBanner } from './props.js';
 import { statsStart, statsPageview, statsError, statsPerf } from './stats.js';
@@ -103,9 +103,9 @@ class Game {
       for (const f of Object.values(this.facades.frames)) if (f && Number.isFinite(f.x)) this.world.addLightSource(f.x + f.nx * 1.6, f.z + f.nz * 1.6, 2.6, 0.6);
       this.world.bakeLamps();
     } catch (e) { console.warn('lantaarnlicht', e); }
-    try { buildBoxmeerWorld(this); } catch (e) { console.warn('Boxmeer: tuin, kabouterboom en straat', e); }
-    this.boxmeerStart();
+    this.agnieseStart();
     this.cars = new Vehicles(this);
+    try { buildAgnieseWorld(this); } catch (e) { console.warn('Agniesebuurt: zwervers, dealers en rotzooi', e); }
     this.spawnVolvo();
     this.farm = this.findFarm();
     this.cars.spawnParked(this.farm ? [{ type: 'tractor', x: this.farm.tx, z: this.farm.tz, heading: this.farm.heading, paint: 0xb71c1c, opts: { isTractor: true } }] : []);
@@ -128,7 +128,7 @@ class Game {
     this.setupPost();
 
     bar.style.width = '100%';
-    txt.textContent = 'Boxmeer staat klaar.';
+    txt.textContent = 'De Agniesebuurt staat klaar.';
     this.updateCamera(0, true);
     this.applyTime();
     this.renderer.compile(this.scene, this.camera);
@@ -226,9 +226,9 @@ class Game {
 
     // introductie: scherm gedimd en een duidelijke knop, zodat je weet dat je eerst moet doorklikken
     document.body.classList.add('intro');
-    await this.ui.dialog('Boxmeer, zaterdag', [
-      { text: 'Joe! Welkom in Boksmèr!', nl: 'Dag! Welkom in Boxmeer!' },
-      'Je staat voor je huis aan het Wieldijkje. Heel Boxmeer ligt voor je open: loop, fiets, skate of pak een auto. Of trek iemand uit zijn auto, als je durft.',
+    await this.ui.dialog('Rotterdam, vrijdag', [
+      { text: 'Welkom in de Agniesebuurt, jong!', nl: null },
+      'Je staat voor ROX aan de Vijverhofstraat. De buurt ligt voor je open: loop, fiets, skate of pak een auto. Let op je spullen, en op de dealers.',
       'Overal zijn missies te doen. Tik op de minikaart rechtsboven om ze allemaal te zien, en kies zelf waar je begint.',
     ]);
     document.body.classList.remove('intro');
@@ -401,7 +401,7 @@ class Game {
     if (this.nightSince == null) {
       this.nightSince = this.time;
       if (m.active?.id !== 'finale') {
-        const todo = []; // Boxmeer heeft (nog) geen avondmissies
+        const todo = []; // de Agniesebuurt heeft (nog) geen avondmissies
         setTimeout(() => this.ui.toast(todo.length
           ? `Het is avond: tijd voor ${todo.length > 1 ? todo.slice(0, -1).join(', ') + ' en ' + todo[todo.length - 1] : todo[0]}. Over 3 minuten wordt het weer dag, of zodra je een andere missie begint.`
           : 'Het is avond. Even genieten van het donker, zo komt de zon weer op.', 5200), 600);
@@ -490,20 +490,17 @@ class Game {
 
   // ------------------------------------------------------------ speler
 
-  // Start iets verderop in het Wieldijkje, met de straat-BBQ en Wieldijkje 9 recht voor je.
-  // Kan pas na buildBoxmeerWorld, want dan staat de BBQ er.
-  boxmeerStart() {
-    const home = this.world.meta.pois.find((q) => q.id === 'thuis');
-    const bbq = this.boxmeer?.bbq;
-    if (!bbq?.dir || !home) return;
-    const [ux, uz] = bbq.dir;
-    // aan de kant van de huizen, ruim voorbij de BBQ
-    const side = Math.sign((home.pos[0] - bbq.street[0]) * -uz + (home.pos[1] - bbq.street[1]) * ux) || 1;
-    const sx = bbq.street[0] + ux * 28 - uz * side * 1.5, sz = bbq.street[1] + uz * 28 + ux * side * 1.5;
-    const start = this.world.resolve(sx, sz, 0.5);
-    // kijkrichting: tussen de BBQ en de voorgevel van nummer 9 in
-    const tx = (bbq.x + home.pos[0]) / 2, tz = (bbq.z + home.pos[1]) / 2;
-    const heading0 = Math.atan2(tx - start[0], tz - start[1]);
+  // Start voor ROX Digital Agency (Vijverhofstraat 47), met de Vijverhofstraat voor je.
+  agnieseStart() {
+    const f = this.facades?.frames?.rox;
+    const rox = this.world.meta.pois.find((q) => q.id === 'rox');
+    if (!f && !rox) return;
+    const bx = f ? f.x + f.nx * 6.5 + f.ux * 1 : rox.pos[0], bz = f ? f.z + f.nz * 6.5 + f.uz * 1 : rox.pos[1];
+    const start = this.world.resolve(bx, bz, 0.5);
+    // kijkrichting: de Vijverhofstraat in, naar Mooie Boules en de NAS
+    const nas = this.world.meta.pois.find((q) => q.id === 'nas');
+    const t = nas ? nas.pos : [start[0] + 10, start[1]];
+    const heading0 = Math.atan2(t[0] - start[0], t[1] - start[1]);
     this.startPos = start;
     this.startHeading = heading0;
     Object.assign(this.player, { x: start[0], z: start[1], heading: heading0 });
@@ -1781,7 +1778,7 @@ class Game {
       if (this.input.consumeAction()) this.exitCar();
       return;
     }
-    // losse interactie (bijv. instappen in de Noblesse-bus)
+    // losse interactie (bijv. instappen in de OQ-bus)
     const xi = this.extraInteract;
     if (xi && this.mode === 'walk' && Math.hypot(p.x - xi.x, p.z - xi.z) < xi.r) {
       this.ui.prompt(xi.label);

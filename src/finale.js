@@ -87,11 +87,13 @@ export function buildPartyLights(g, cx, cz) {
   };
 }
 
-// Uitnodiging: lichtbundel naar de Markt; de finale begint als je daar bent.
+// Uitnodiging: lichtbundel naar de Vijverhofstraat; de finale begint als je daar bent.
 export function inviteFinale(m, g) {
-  const markt = g.world.spotNear(20, 0);
-  m.setActive('finale', 'Feest op het Raadhuisplein!', 'Je hebt alle missies gedaan! De waard van Café Nog\'us geeft een feest voor je op het Raadhuisplein. Volg de lichtbundel.', '');
-  g.ui.toast('Alle missies gedaan! Er is feest voor je op het Raadhuisplein.', 3500);
+  // voor de deur van Dikke Mic, midden in de Vijverhofstraat
+  const f = g.facades.frames.dikkemic;
+  const markt = f ? g.world.resolve(f.x + f.nx * 6, f.z + f.nz * 6, 1) : g.world.spotNear(20, 0);
+  m.setActive('finale', 'Feest in de Vijverhofstraat!', 'Je hebt alle missies gedaan! De gastheer van Dikke Mic geeft een feest voor je in de Vijverhofstraat. Volg de lichtbundel.', '');
+  g.ui.toast('Alle missies gedaan! Er is feest voor je in de Vijverhofstraat.', 3500);
   g.setDestination(markt, 1e9, () => startFinale(m, g, markt), () => {}, { noTimer: true });
 }
 
@@ -146,9 +148,9 @@ async function startFinale(m, g, markt) {
   m.active.cleanup = restore;
   g.sfx?.play('cheer');
   await ui.dialog(waard.name, [
-    'Daar is ie! Iedereen, even stil! Dit is degene die heel Boksmèr heeft geholpen.',
-    'Bommetjes in de achtertuin aan het Wieldijkje, burgers op de straat-BBQ, kabouters uit het Weijerpark, misswijn voor de basiliek, Koning van de Metworst... en ga zo maar door.',
-    'Daarom ben jij vanaf vandaag Ereburger van Boksmèr! Liever schik as un neije boks!',
+    'Daar is ie! Iedereen, even stil! Dit is degene die de hele Agniesebuurt heeft geholpen.',
+    'Dealers gepakt, de Teilingerstraat schoongeveegd, sambal overleefd, frikandelbroodjes langs de zwervers gesmokkeld, de site van ROX live gezet... en ga zo maar door.',
+    'Daarom ben jij vanaf vandaag Ereburger van de Agniesebuurt! Niet lullen maar poetsen!',
     'Muziek! Vuurwerk! En een rondje pils van de zaak! Iedereen achter de ereburger aan: polonaise!',
   ]);
   if (m.active?.id !== 'finale') return;
@@ -157,7 +159,7 @@ async function startFinale(m, g, markt) {
   g.sfx?.startMusic();
   clones.forEach((c) => { c.joined = true; });
   g.fx.confetti(g.player.x, w.groundAt(g.player.x, g.player.z) + 3, g.player.z, 220, true);
-  m.progress('Loop met de polonaise over het Raadhuisplein en kijk naar het vuurwerk');
+  m.progress('Loop met de polonaise door de Vijverhofstraat en kijk naar het vuurwerk');
   lights = buildPartyLights(g, cx, cz);
   // geen aftelklok: je stopt het feest zelf als je er genoeg van hebt
   bar = document.createElement('div');
@@ -200,9 +202,9 @@ async function startFinale(m, g, markt) {
   restore();
   m.active.cleanup = null;
   await ui.dialog(waard.name, [
-    'Wat een feest! Heel Boxmeer praat er nog jaren over. Van het Wieldijkje tot de Steenstraat.',
+    'Wat een feest! De hele buurt praat er nog jaren over. Zelfs de zwervers, en die zijn wat gewend.',
     'Je kunt alle missies opnieuw spelen. Op de kaart zie je je beste tijd of score. Kijk of je die nog kunt verbeteren!',
   ]);
-  m.complete('finale', 'Ereburger van Boksmèr!');
+  m.complete('finale', 'Ereburger van de Agniesebuurt!');
 }
 if (typeof location !== 'undefined' && location.search.includes('dev')) window.__finale = inviteFinale;

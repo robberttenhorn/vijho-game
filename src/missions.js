@@ -15,7 +15,7 @@ import { setupWest, setupGroeneweg, setupFitness, setupVerbouwing, setupPloegen,
 import { setupMarkt, marktItems, marktHandlers, MARKT_MISSION_OF } from './missions4.js';
 import { setupGeschiedenis, geschiedenisItems, geschiedenisHandlers, GESCHIEDENIS_MISSION_OF } from './missions5.js';
 import { setupKnotwilg, knotwilgItems, knotwilgHandlers, KNOTWILG_MISSION_OF } from './knotwilg.js';
-import { setupBoxmeer, boxmeerItems, boxmeerHandlers, BOXMEER_MISSION_OF } from './boxmeer.js';
+import { setupAgniese, agnieseItems, agnieseHandlers, AGNIESE_MISSION_OF } from './agniese.js';
 import { makeSuitcase, makeBankStatement, makeCart, makeVlaaiStack, makeBorrelplank, makeMeatPackage, makeFrikandel, makePuntzak, makeBroodje, makePackage, makeShadyPackage, makeVlaai, makeSnuifdoos, makeDeliveryBag, makeTvCamera, makePitchfork, makeWrench, makeRod, makeFluitje, makeStampPost, makeLantern } from './props.js';
 
 const SAVE_KEY = STORE + 'missies-v2';
@@ -86,9 +86,9 @@ export class Missions {
 
     const add = (key, name, spot, look) => { const npc = (this.npcs[key] = g.addNpc(name, spot, makeCharacter(look))); npc.look = look; return npc; };
     void spotFor;
-    // Boxmeer: alle mensen en missies staan in boxmeer.js
-    setupBoxmeer(this, g, add);
-    Object.assign(this.extra, boxmeerHandlers);
+    // Agniesebuurt: alle mensen en missies staan in agniese.js
+    setupAgniese(this, g, add);
+    Object.assign(this.extra, agnieseHandlers);
 
     Object.values(this.npcs).forEach((n) => { n.active = true; });
     this.refresh();
@@ -98,7 +98,7 @@ export class Missions {
   list() {
     const g = this.g;
     const n = this.npcs;
-    const items = boxmeerItems(n);
+    const items = agnieseItems(n);
     for (const m of items) { m.state = this.active?.id === m.id ? 'actief' : this.done.has(m.id) && !m.repeat ? 'klaar' : 'open'; m.best = this.bestLabel(m.id); }
     void g;
     return items;
@@ -188,7 +188,7 @@ export class Missions {
     npc.lookAtPlayer = true;
     try {
       // bezig met een andere klus?
-      const missionOf = { ...BOXMEER_MISSION_OF };
+      const missionOf = { ...AGNIESE_MISSION_OF };
       const key = Object.keys(n).find((k) => n[k] === npc);
       const mid = missionOf[key];
       const deliverKeg = key === 'waard' && this.active?.id === 'vat';
@@ -198,7 +198,7 @@ export class Missions {
         if (a !== 1) return;
         this.abort();
       }
-      await (boxmeerHandlers[key] || this.handlers[key] || this.extra[key])?.call(this, npc, N, ui, g);
+      await (agnieseHandlers[key] || this.handlers[key] || this.extra[key])?.call(this, npc, N, ui, g);
     } finally {
       if (this.talkToken === token) this.talking = false;
       g.player.lockedFor = false;

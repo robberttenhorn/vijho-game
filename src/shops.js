@@ -1,4 +1,4 @@
-// Winkels en bedrijven met een eigen gevel op hun echte adres (Steenstraat, centrum en de Rembrandt van Rijnstraat in Boxmeer).
+// Winkels en bedrijven met een eigen gevel op hun echte adres (Vijverhofstraat, Teilingerstraat en Eudokiaplein in Rotterdam).
 // Namen en adressen komen uit online bedrijvengidsen en kunnen verouderd zijn.
 // De borden, kleuren en etalages zijn verzonnen in een passende stijl: geen echte logo's.
 import * as THREE from 'three';
@@ -7,34 +7,15 @@ import { buildFitnessFront, frameLooierCorner } from './fitness.js';
 const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, ...extra });
 const mesh = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; return m; };
 
-// id -> bord en etalage (Boxmeer: Steenstraat, centrum en de Rembrandt van Rijnstraat)
+// id -> bord en etalage (Agniesebuurt: Vijverhofstraat, Teilingerstraat en Eudokiaplein)
 export const SHOPS = {
-  fysioholland: { sign: 'FysioHolland', sub: 'fysiotherapie', bg: '#ffffff', fg: '#00857c', type: 'fysio', street: 'Rembrandt van Rijnstraat' },
-  abnamro: { sign: 'ABN AMRO', sub: 'bank', bg: '#00857a', fg: '#ffd200', type: 'kantoor', street: 'Steenstraat' },
-  blokker: { sign: 'Blokker', sub: 'huishouden', bg: '#d8232a', fg: '#ffffff', type: 'warenhuis', street: 'Steenstraat' },
-  phonehouse: { sign: 'Phone House', sub: 'telefoons', bg: '#1b1b1b', fg: '#ffffff', type: 'elektro', street: 'Steenstraat' },
-  etos: { sign: 'Etos', sub: 'drogisterij', bg: '#0a5fa8', fg: '#ffffff', type: 'drogist', street: 'Steenstraat' },
-  intertoys: { sign: 'Intertoys', sub: 'speelgoed', bg: '#e30613', fg: '#ffffff', type: 'speelgoed', street: 'Steenstraat' },
-  scapino: { sign: 'Scapino', sub: 'schoenen · kleding', bg: '#ffd400', fg: '#1b1b1b', type: 'kleding', street: 'Steenstraat' },
-  willyarts: { sign: 'Willy Arts', sub: 'schoenmode', bg: '#2b2b2b', fg: '#e8d7b0', type: 'kleding', awning: ['#2b2b2b', '#e8d7b0'], street: 'Steenstraat' },
-  sylle: { sign: 'Sylle Lingerie', sub: 'lingerie · badmode', bg: '#f3d6dc', fg: '#7a2140', type: 'damesmode', street: 'Steenstraat' },
-  vanpampus: { sign: 'Van Pampus', sub: 'juweliershuis', bg: '#1d2a3a', fg: '#d6b45a', type: 'opticien', street: 'Steenstraat' },
-  iciparis: { sign: 'ICI PARIS XL', sub: 'parfumerie', bg: '#111111', fg: '#ffffff', type: 'drogist', street: 'Steenstraat' },
-  vanos: { sign: 'Van Os', sub: 'tassen · koffers', bg: '#5a3a22', fg: '#f3e6c8', type: 'kleding', street: 'Steenstraat' },
-  kruidvat: { sign: 'Kruidvat', sub: 'drogisterij', bg: '#d6001c', fg: '#ffffff', type: 'drogist', automaat: true, street: 'Steenstraat' },
-  bruna: { sign: 'Bruna', sub: 'boeken · tijdschriften · kantoor', bg: '#003b7a', fg: '#ffd400', type: 'tijdschriften', street: 'Steenstraat' },
-  albertheijn: { sign: 'Albert Heijn', sub: 'supermarkt', bg: '#00a0e2', fg: '#ffffff', type: 'supermarkt', street: 'Steenstraat' },
-  hema: { sign: 'HEMA', sub: '', bg: '#c8102e', fg: '#ffffff', type: 'warenhuis', street: 'Steenstraat' },
-  rabobank: { sign: 'Rabobank', sub: '', bg: '#ffffff', fg: '#000099', type: 'kantoor', street: 'Steenstraat' },
-  nogus: { sign: "Café Nog'us", sub: 'café', bg: '#1b1b1b', fg: '#f2c14e', type: 'cafe', street: 'Steenstraat', terrace: 2 },
-  esser: { sign: 'Pub Esser', sub: 'pub', bg: '#123a24', fg: '#e8c77a', awning: ['#123a24', '#e8c77a'], type: 'bier', street: 'Steenstraat', terrace: 3 },
-  douairiere: { sign: 'Grand Café de Douairière', sub: 'eten · drinken', bg: '#3e2a1e', fg: '#e8c77a', awning: ['#3e2a1e', '#f3e6c8'], type: 'cafe', street: 'Steenstraat', terrace: 4 },
-  centrumcafe: { sign: "Café-zaal 't Centrum", sub: 'café · zaal', bg: '#5a1f1f', fg: '#f5e3c0', type: 'cafe', street: 'Steenstraat', terrace: 2 },
-  rembrandt: { sign: 'IJssalon Rembrandt', sub: 'ijs · koffie', bg: '#f7c6d9', fg: '#7a1f4a', awning: ['#f7c6d9', '#ffffff'], type: 'ijs', street: 'Steenstraat' },
-  azie: { sign: 'Azië', sub: 'restaurant', bg: '#b71c1c', fg: '#ffd54f', type: 'restaurant', street: 'Steenstraat' },
-  kapadokya: { sign: 'Kapadokya', sub: 'restaurant', bg: '#7a1f1f', fg: '#ffffff', awning: ['#7a1f1f', '#ffffff'], type: 'restaurant', street: 'Steenstraat' },
-  cleopatra: { sign: 'Grillroom Cleopatra', sub: 'grillroom', bg: '#1b5e20', fg: '#ffd54f', awning: ['#1b5e20', '#ffd54f'], type: 'grill', street: 'Steenstraat' },
-  zuss: { sign: 'Brasserie Zuss', sub: 'brasserie · terras', bg: '#2b2b2b', fg: '#f3e2b8', type: 'restaurant', terrace: 3 },
+  dikkemic: { sign: 'Dikke Mic', sub: 'karaoke · games · food', bg: '#1a0b2e', fg: '#ff4fd8', type: 'cafe', street: 'Vijverhofstraat' },
+  mooieboules: { sign: 'Mooie Boules', sub: 'jeu de boules · foodhal', bg: '#f3ead6', fg: '#1f3b2d', type: 'cafe', street: 'Vijverhofstraat', terrace: 2 },
+  nas: { sign: 'NAS', sub: 'dag- en nachtopvang', bg: '#e8e2d6', fg: '#3b3b3b', type: 'kantoor', street: 'Vijverhofstraat' },
+  subway: { sign: 'Subway', sub: 'sandwiches', bg: '#00843d', fg: '#ffc20e', type: 'lunchroom', street: 'Teilingerstraat' },
+  silvia: { sign: 'Afhaalrestaurant Silvia', sub: 'Surinaams', bg: '#1b5e20', fg: '#fdd835', awning: ['#b71c1c', '#fdd835'], type: 'restaurant', street: 'Teilingerstraat' },
+  sevinc: { sign: 'Sevinc Pizza', sub: 'pizza · kebab · kapsalon', bg: '#b71c1c', fg: '#ffffff', awning: ['#b71c1c', '#ffffff'], type: 'grill', street: 'Teilingerstraat' },
+  albertheijn: { sign: 'Albert Heijn', sub: 'supermarkt', bg: '#00a0e2', fg: '#ffffff', type: 'supermarkt', street: 'Eudokiaplein' },
 };
 
 // Bouwt alle winkels. fac = Facades-instantie (helpers voor bord, luifel, etalage, deur).

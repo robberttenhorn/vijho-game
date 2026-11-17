@@ -1,4 +1,4 @@
-// Haalt open data van Boxmeer op en zet die om naar compacte bestanden in public/data/.
+// Haalt open data van de Agniesebuurt (Rotterdam) op en zet die om naar compacte bestanden in public/data/.
 //
 // Bronnen (allemaal gratis en open):
 //   - 3D BAG (api.3dbag.nl): alle gebouwen in 3D (LoD 2.2), CC BY 4.0
@@ -15,48 +15,30 @@ import { Earcut } from 'three/src/extras/Earcut.js';
 
 const OUT = path.resolve('public/data');
 
-// Oorsprong van de spelwereld: het Raadhuisplein in het centrum van Boxmeer, in RD-coördinaten (EPSG:28992).
-const ORIGIN = { x: 193790, y: 406826 };
+// Oorsprong van de spelwereld: Vijverhofstraat 47, in RD-coördinaten (EPSG:28992).
+const ORIGIN = { x: 92385, y: 438267 }; // Vijverhofstraat 47 (ROX Digital Agency)
 
-// Speelgebied: het noordoosten van Boxmeer (Wieldijkje en omgeving, het Weijerpark, het kasteel) en een deel van het centrum
-// (Steenstraat, Raadhuisplein, tot aan de Rembrandt van Rijnstraat). Daaromheen een groter gebied voor de horizon (de Maas).
-const CORE = { minX: 193100, minY: 406400, maxX: 194800, maxY: 407600, res: 2 };
-const WIDE = { minX: 189700, minY: 402800, maxX: 198200, maxY: 411300, res: 20 };
+// Speelgebied: de Agniesebuurt en omgeving, tussen Hofplein, Noordplein, Eudokiaplein en Bergweg.
+// Daaromheen een groter gebied voor de horizon (het centrum van Rotterdam).
+const CORE = { minX: 91850, minY: 437560, maxX: 93000, maxY: 439200, res: 2 };
+const WIDE = { minX: 88200, minY: 434200, maxX: 96600, maxY: 442600, res: 20 };
 
-// Plekken (adres en ligging via de PDOK Locatieserver; namen uit online bedrijvengidsen en Visit Brabant)
+// Plekken (adres en ligging via de PDOK Locatieserver; namen opgegeven door de maker of uit online gidsen)
 const POIS = [
-  { id: 'raadhuisplein', name: 'Raadhuisplein', address: 'Raadhuisplein', x: 193790, y: 406826 },
-  { id: 'thuis', name: 'Wieldijkje 9', address: 'Wieldijkje 9', x: 194254, y: 407298 },
-  { id: 'wieldijkje', name: 'Wieldijkje', address: 'Wieldijkje', x: 194227.4, y: 407261.5 },
-  { id: 'fysioholland', name: 'FysioHolland', address: 'Rembrandt van Rijnstraat 3', x: 193251.0, y: 406792.4, shop: true },
-  { id: 'weijer', name: 'De Weijer en het Weijerpark', address: 'De Raetsingel 1', x: 193986, y: 406888 },
-  { id: 'basiliek', name: 'Sint-Petrusbasiliek', address: 'Steenstraat 41', x: 194139, y: 406605 },
-  { id: 'kasteel', name: 'Kasteel Boxmeer', address: 'Veerstraat 49', x: 194642.2, y: 407048.5 },
-  { id: 'kruidvat', name: 'Kruidvat', address: 'Steenstraat 71', x: 193973, y: 406689, shop: true },
-  { id: 'abnamro', name: "ABN AMRO", address: 'Steenstraat 70', x: 194054, y: 406620, shop: true },
-  { id: 'blokker', name: "Blokker", address: 'Steenstraat 69', x: 193983, y: 406684, shop: true },
-  { id: 'phonehouse', name: "Phone House", address: 'Steenstraat 57', x: 194047, y: 406656, shop: true },
-  { id: 'etos', name: "Etos", address: 'Steenstraat 87', x: 193894, y: 406733, shop: true },
-  { id: 'intertoys', name: "Intertoys", address: 'Steenstraat 77', x: 193952.4, y: 406703.9, shop: true },
-  { id: 'scapino', name: "Scapino", address: 'Steenstraat 111', x: 193663, y: 406819, shop: true },
-  { id: 'willyarts', name: "Willy Arts Schoenmode", address: 'Steenstraat 75', x: 193964, y: 406700, shop: true },
-  { id: 'sylle', name: "Sylle Lingerie", address: 'Steenstraat 100', x: 193928, y: 406690, shop: true },
-  { id: 'vanpampus', name: "Het Juweliershuis Van Pampus", address: 'Steenstraat 118', x: 193864, y: 406733, shop: true },
-  { id: 'iciparis', name: "ICI Paris XL", address: 'Steenstraat 138', x: 193793, y: 406766, shop: true },
-  { id: 'vanos', name: "Van Os tassen en koffers", address: 'Steenstraat 130', x: 193836.7, y: 406746.7, shop: true },
-  { id: 'bruna', name: 'Bruna', address: 'Steenstraat 55a', x: 194082, y: 406678, shop: true },
-  { id: 'albertheijn', name: 'Albert Heijn', address: 'Steenstraat 136', x: 193814.4, y: 406753.1, shop: true },
-  { id: 'hema', name: 'HEMA', address: 'Steenstraat 94', x: 193954, y: 406678, shop: true },
-  { id: 'rabobank', name: 'Rabobank', address: 'Steenstraat 106', x: 193906.2, y: 406703.8, shop: true },
-  { id: 'nogus', name: "Café Nog'us", address: 'Steenstraat 55b', x: 194072, y: 406667, shop: true, cafe: true },
-  { id: 'esser', name: 'Pub Esser', address: 'Steenstraat 37', x: 194191.3, y: 406557.1, shop: true, cafe: true },
-  { id: 'douairiere', name: 'Grand Café de Douairière', address: 'Steenstraat 156', x: 193724, y: 406790, shop: true, cafe: true },
-  { id: 'centrumcafe', name: "Café-zaal 't Centrum", address: 'Steenstraat 56a', x: 194096, y: 406580, shop: true, cafe: true },
-  { id: 'rembrandt', name: 'IJssalon Rembrandt', address: 'Steenstraat 61b', x: 194010, y: 406667, shop: true },
-  { id: 'azie', name: 'Chinees Indisch Restaurant Azië', address: 'Steenstraat 23', x: 194255, y: 406533, shop: true },
-  { id: 'kapadokya', name: 'Restaurant Kapadokya', address: 'Steenstraat 74', x: 194037.4, y: 406635.5, shop: true },
-  { id: 'cleopatra', name: 'Grillroom Cleopatra', address: 'Steenstraat 22a', x: 194224.8, y: 406524.7, shop: true },
-  { id: 'zuss', name: 'Brasserie Zuss', address: "d'n Entrepot 8", x: 193873, y: 406653, shop: true },
+  { id: 'rox', name: 'ROX Digital Agency', address: 'Vijverhofstraat 47', x: 92385.5, y: 438267.4 },
+  { id: 'dikkemic', name: 'Dikke Mic', address: 'Vijverhofstraat 47', x: 92390, y: 438263, shop: true },
+  { id: 'mooieboules', name: 'Mooie Boules', address: 'Vijverhofstraat 45', x: 92413.7, y: 438245.7, shop: true },
+  { id: 'nas', name: 'NAS (Nico Adriaans Stichting)', address: 'Vijverhofstraat 35-37', x: 92426.0, y: 438235.2, shop: true },
+  { id: 'reef', name: 'Café Reef', address: 'Vijverhofstraat 26', x: 92388.1, y: 438236.76, shop: true },
+  { id: 'subway', name: 'Subway', address: 'Teilingerstraat 83B', x: 92243.5, y: 438176.9, shop: true },
+  { id: 'silvia', name: 'Afhaalrestaurant Silvia', address: 'Teilingerstraat 85A', x: 92239.3, y: 438173.1, shop: true },
+  { id: 'sevinc', name: 'Sevinc Pizza', address: 'Teilingerstraat 67C', x: 92281.1, y: 438212.0, shop: true },
+  { id: 'albertheijn', name: 'Albert Heijn', address: 'Eudokiaplein 12', x: 92011.4, y: 438650.1, shop: true },
+  { id: 'hofplein', name: 'Hofplein', address: 'Hofplein', x: 92424.1, y: 437676.5 },
+  { id: 'noordplein', name: 'Noordplein', address: 'Noordplein', x: 92875.0, y: 438348.5 },
+  { id: 'eudokiaplein', name: 'Eudokiaplein', address: 'Eudokiaplein', x: 92007.1, y: 438626.8 },
+  { id: 'vijverhofstraat', name: 'Vijverhofstraat', address: 'Vijverhofstraat', x: 92400, y: 438255 },
+  { id: 'teilingerstraat', name: 'Teilingerstraat', address: 'Teilingerstraat', x: 92353.3, y: 438257.2 },
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

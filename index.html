@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Locals: Boxmeer</title>
+  <title>Locals: Agniesebuurt</title>
   <meta name="theme-color" content="#1b2a3a" />
   <!-- als app op het beginscherm: naam, icoon en schermvullend openen -->
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -11,20 +11,20 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Locals: Boxmeer" />
+  <meta name="apple-mobile-web-app-title" content="Locals: Agniesebuurt" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <!-- wat je ziet als je de link deelt (WhatsApp, Facebook, iMessage...). Het beeld maak je opnieuw met tools/og-beeld.cjs.
        Het adres van het beeld moet volledig zijn: het wijst naar de echte game. -->
-  <meta name="description" content="Loop, fiets of rij door het echte Boxmeer. Speel missies voor de Boksmèrse dorpsgenoten, van het Wieldijkje tot de Steenstraat. Gratis in je browser." />
+  <meta name="description" content="Loop, fiets of rij door de echte Agniesebuurt in Rotterdam. Speel ludieke missies tussen zwervers, dealers en snackbars, van het Hofplein tot de Bergweg." />
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Locals: Boxmeer" />
-  <meta property="og:title" content="Locals: Boxmeer" />
-  <meta property="og:description" content="Loop, fiets of rij door het echte Boxmeer. Speel missies voor de Boksmèrse dorpsgenoten, van het Wieldijkje tot de Steenstraat. Gratis in je browser." />
-  <meta property="og:url" content="https://robberttenhorn.github.io/boxmeer-game/" />
-  <meta property="og:image" content="https://robberttenhorn.github.io/boxmeer-game/og.jpg" />
+  <meta property="og:site_name" content="Locals: Agniesebuurt" />
+  <meta property="og:title" content="Locals: Agniesebuurt" />
+  <meta property="og:description" content="Loop, fiets of rij door de echte Agniesebuurt in Rotterdam. Speel ludieke missies tussen zwervers, dealers en snackbars, van het Hofplein tot de Bergweg." />
+  <meta property="og:url" content="https://robberttenhorn.github.io/vijho-game/" />
+  <meta property="og:image" content="https://robberttenhorn.github.io/vijho-game/og.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Het logo van Locals: Boxmeer boven een uitzicht over Boxmeer" />
+  <meta property="og:image:alt" content="Het logo van Locals: Agniesebuurt boven de Vijverhofstraat" />
   <meta property="og:locale" content="nl_NL" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -35,7 +35,7 @@
   <canvas id="scene"></canvas>
 
   <div id="loading">
-    <!-- achtergrond: een uitzicht over Boxmeer (zelfde beeld als bij het delen van de link), met een donker verloop voor de leesbaarheid.
+    <!-- achtergrond: de Vijverhofstraat (zelfde beeld als bij het delen van de link), met een donker verloop voor de leesbaarheid.
          Het beeld maak je opnieuw met tools/laadbeeld.cjs. -->
     <picture>
       <source media="(orientation: portrait) and (max-width: 760px)" srcset="/laadbeeld-staand-klein.jpg 540w, /laadbeeld-staand.jpg 1080w" sizes="100vw" />
@@ -44,17 +44,17 @@
     <div class="loading-shade"></div>
     <div class="loading-card">
       <!-- logo: "LOCALS" met een kaartspeld als O; de plaatsnaam staat op een straatnaambord (zie src/config.js) -->
-      <h1 class="logo" aria-label="Locals: Boxmeer">
+      <h1 class="logo" aria-label="Locals: Agniesebuurt">
         <span class="logo-main">L<svg class="logo-pin" viewBox="0 0 64 84" aria-hidden="true"><path d="M32 2C16 2 4 14 4 30c0 21 28 50 28 50s28-29 28-50C60 14 48 2 32 2z" fill="currentColor" stroke="#7a3d00" stroke-width="4"/><path d="M19 33 32 21l13 12v13H37v-8h-10v8h-8z" fill="#fff"/></svg>CALS</span>
-        <span class="logo-place"><span id="logo-place">Boxmeer</span></span>
+        <span class="logo-place"><span id="logo-place">Agniesebuurt</span></span>
       </h1>
-      <div class="tagline">Van het Wieldijkje tot de Steenstraat</div>
-      <p class="load-sub">Loop, fiets of rij door het echte Boxmeer.</p>
+      <div class="tagline">Van het Hofplein tot de Bergweg</div>
+      <p class="load-sub">Loop, fiets of rij door de echte Agniesebuurt.</p>
       <!-- tijdens het laden: balk met wat er gebeurt; daarna komt op dezelfde plek de knop Speel -->
       <div class="load-slot">
         <div class="load-busy">
           <div class="bar"><div id="loading-bar"></div></div>
-          <div id="loading-text">Boxmeer wordt opgebouwd...</div>
+          <div id="loading-text">De Agniesebuurt wordt opgebouwd...</div>
         </div>
         <button id="start-btn" hidden>Speel</button>
       </div>
@@ -102,7 +102,7 @@
       <div class="sp-note" id="settings-note">Laag is aanbevolen op mobiel.</div>
       <details class="sp-more">
         <summary>Meer info</summary>
-        <p>Deze game speelt zich af in het echte Boxmeer. Het dorp is opgebouwd uit open data; de personen en verhalen zijn verzonnen.</p>
+        <p>Deze game speelt zich af in de echte Agniesebuurt in Rotterdam. De wijk is opgebouwd uit open data; de personen en verhalen zijn verzonnen en overdreven.</p>
         <ul>
           <li><b>Gebouwen:</b> 3D BAG (TU Delft / 3DGI), CC BY 4.0</li>
           <li><b>Luchtfoto:</b> Beeldmateriaal Nederland, CC BY 4.0</li>
@@ -121,7 +121,7 @@
 
     <div id="race-timer" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="2.4" fill="none"/><path d="M12 9v4l2.5 2M9.5 2.5h5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg><span id="race-timer-text"></span></div>
 
-    <div id="live-badge" hidden><span class="dot"></span>LIVE <small>Boxmeer</small></div>
+    <div id="live-badge" hidden><span class="dot"></span>LIVE <small>Roffa</small></div>
 
     <div id="prompt" hidden></div>
 
@@ -138,7 +138,7 @@
     <div id="bigmap" hidden>
       <canvas id="bigmap-canvas"></canvas>
       <div id="bigmap-panel">
-        <div class="bm-head"><span>Boxmeer</span><button id="bigmap-close">Sluiten</button></div>
+        <div class="bm-head"><span>Agniesebuurt</span><button id="bigmap-close">Sluiten</button></div>
         <div id="bigmap-list"></div>
         <div class="bm-hint">Tik op een plek om er een route-markering naartoe te zetten.</div>
       </div>

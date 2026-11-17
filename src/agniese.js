@@ -1,0 +1,484 @@
+// Missies in de Agniesebuurt (Rotterdam), tussen Hofplein, Noordplein, Eudokiaplein en Bergweg.
+// Ludiek en grof: een overdreven, satirisch beeld van de buurt. Alle personen in de missies zijn verzonnen.
+// Rotterdamse woorden komen uit openbare woordenlijsten (Wikipedia, webwoordenboek.nl, OPEN Rotterdam en andere);
+// nog laten nakijken door een echte Rotterdammer.
+import * as THREE from 'three';
+import { startGyros } from './skills2.js';
+import { startParking } from './skills.js';
+import { startSambal, startKaraoke, startBugs, startBoules, startSub, startKlopcode } from './agniese-skills.js';
+import { makeJunkie } from './agniese-wereld.js';
+
+// Rotterdamse zin met Nederlandse vertaling
+const R = (text, nl) => ({ text, nl });
+const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, ...extra });
+
+// stapel frikandelbroodjes op een bakplaat (elke botsing of zwerver kost er een)
+function makeBroodjesTray() {
+  const g = new THREE.Group();
+  g.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.34), std(0x9e9e9e, { metalness: 0.6 })), {}));
+  g.userData.layers = [];
+  for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) {
+    const b = new THREE.Group();
+    const dough = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, 0.16, 4, 10), std(0xd9a35a, { roughness: 0.6 }));
+    dough.rotation.z = Math.PI / 2; b.add(dough);
+    for (let s = -1; s <= 1; s++) { const cut = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.06), std(0x8d4a2a)); cut.position.set(s * 0.05, 0.043, 0); cut.rotation.y = 0.6; b.add(cut); }
+    b.position.set(-0.17 + k * 0.115, 0.06 + r * 0.09, (r ? 0 : 0.08) - 0.04);
+    g.add(b);
+    g.userData.layers.push(b);
+  }
+  return g;
+}
+
+// stukje rotzooi om op te ruimen (vuilniszak, blikje, pizzadoos, oude schoen)
+function makeTrash(kind) {
+  const g = new THREE.Group();
+  if (kind === 0) { const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 1), std(0x111111, { roughness: 0.3 })); b.scale.y = 0.85; b.position.y = 0.26; g.add(b); }
+  else if (kind === 1) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.2, 10), std(0xc62828, { metalness: 0.7, roughness: 0.3 })); c.rotation.z = Math.PI / 2; c.position.y = 0.06; g.add(c); }
+  else if (kind === 2) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 0.42), std(0xc8a46a)); p.position.y = 0.03; g.add(p); }
+  else { const s = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.32), std(0x5d4037)); s.position.y = 0.06; g.add(s); }
+  return g;
+}
+
+// Een paar geparkeerde auto's weghalen rond een punt, zodat er vakken vrij zijn om in te parkeren
+// (in de Vijverhofstraat staat anders alles vol).
+function freeParking(g, near, n = 6, r = 70) {
+  const cars = g.cars;
+  if (!cars?.batches) return;
+  const spots = (g.world.parkingSpots || []).map((s) => ({ s, d: Math.hypot(s.x - near[0], s.z - near[1]) })).filter((q) => q.d < r).sort((a, b) => a.d - b.d);
+  const kill = new Set();
+  for (const { s } of spots) {
+    if (kill.size >= n) break;
+    const c = cars.cars.find((k) => k.parked && !k.mesh && !kill.has(k) && Math.hypot(k.x - s.x, k.z - s.z) < 1.5);
+    if (c) kill.add(c);
+  }
+  if (!kill.size) return;
+  for (const b of Object.values(cars.batches)) b.cars = b.cars.filter((c) => !kill.has(c));
+  cars.cars = cars.cars.filter((c) => !kill.has(c));
+  cars.refreshBatches(true);
+}
+
+// ------------------------------------------------------------ opzet
+
+export function setupAgniese(m, g, add) {
+  const w = g.world;
+  const poi = (id) => w.meta.pois.find((p) => p.id === id);
+  const spotFor = (id, out = 2.4, side = 0) => {
+    const f = g.facades.frames[id];
+    if (f) return w.resolve(f.x + f.nx * out + (f.ux || 0) * side, f.z + f.nz * out + (f.uz || 0) * side, 0.5);
+    const p = poi(id);
+    return p ? w.spotNear(...p.pos) : null;
+  };
+  const S = (id, out, side) => spotFor(id, out, side);
+  { const s = S('rox', 2.6, 3.2); if (s) add('rox', 'Developer van ROX', s, { shirt: 0x263238, pants: 0x1b1b1b, hair: 0x3e2723, glasses: true, beard: true, sleeves: 'long' }); }
+  { const s = S('dikkemic', 2.6, -1.2); if (s) add('waard', 'Gastheer van Dikke Mic', s, { shirt: 0x6a1b9a, pants: 0x111111, hair: 0x111111, apron: 0x111111 }); }
+  { const s = S('mooieboules', 2.6); if (s) add('boules', 'Gastvrouw van Mooie Boules', s, { shirt: 0x2e7d32, pants: 0x263238, hair: 0xd7b56d, female: true, hairStyle: 'bun', apron: 0xf5f0e6 }); }
+  { const s = S('nas', 2.8); if (s) add('nasmw', 'Medewerker van de NAS', s, { shirt: 0xef6c00, pants: 0x37474f, hair: 0x5d4037, coat: 0xef6c00 }); }
+  { const s = S('silvia', 2.6); if (s) add('silvia', 'Achter de toonbank bij Silvia', s, { shirt: 0xfdd835, pants: 0x1b5e20, hair: 0x111111, female: true, hairStyle: 'bun', apron: 0xc62828, skin: 0x8d5524 }); }
+  { const s = S('sevinc', 2.6); if (s) add('sevinc', 'De pizzabakker van Sevinc', s, { shirt: 0xffffff, pants: 0x222222, hair: 0x111111, apron: 0xd84315, beard: true, skin: 0xc68642 }); }
+  { const s = S('albertheijn', 3.2); if (s) add('ahmw', 'Bakker van de Albert Heijn', s, { shirt: 0x00a0e2, pants: 0x263238, hair: 0xa1887f, apron: 0xffffff, hat: 'chef' }); }
+  { const s = S('subway', 2.6, 1.2); if (s) add('subway', 'Medewerker van Subway', s, { shirt: 0x00843d, pants: 0x1b1b1b, hair: 0x3e2723, hat: 'cap', hatColor: 0xffc20e }); }
+  // vaste klant van Café Reef, op een bierkrat voor de dichtgetimmerde deur
+  { const s = S('reef', 2.4, 2.0); if (s) add('reefklant', 'Vaste klant van Café Reef', s, { shirt: 0x5d4037, pants: 0x37474f, hair: 0x9e9e9e, beard: true, coat: 0x3e2723, hat: 'cap', hatColor: 0x1d3b4f, build: 1.2 }); }
+  // wijkagent op de hoek van de Teilingerstraat
+  { const s = S('subway', 3.4, -4); if (s) add('agent', 'Wijkagent', s, { shirt: 0x1a237e, pants: 0x101433, hair: 0x3e2723, hat: 'cap', hatColor: 0x101433, sleeves: 'long' }); }
+  // stadsreiniger met bezem halverwege de Teilingerstraat
+  {
+    const p = w.streetPath('Teilingerstraat');
+    if (p.length > 1) { const [x, z] = p[Math.floor(p.length * 0.55)]; add('veger', 'Stadsreiniger', w.resolve(x + 3, z + 3, 0.5), { shirt: 0xff6f00, pants: 0x263238, hair: 0x9e9e9e, coat: 0xff6f00, hat: 'cap', hatColor: 0xff6f00 }); }
+  }
+  // buurvrouw die een parkeerplek zoekt in de Vijverhofstraat
+  {
+    const p = w.streetPath('Vijverhofstraat');
+    if (p.length > 1) { const [x, z] = p[Math.floor(p.length * 0.3)]; add('parkeer', 'Buurvrouw met sleutels', w.resolve(x + 3.5, z - 2.5, 0.5), { shirt: 0xad1457, pants: 0x37474f, hair: 0xbdbdbd, female: true, hairStyle: 'bun', glasses: true, coat: 0x6d4c41 }); }
+  }
+  m.agnieseTrash = null;
+}
+
+// ------------------------------------------------------------ lijst
+
+export function agnieseItems(n) {
+  return [
+    { id: 'rox', npc: n.rox, title: 'Bugs bij ROX', place: 'ROX Digital Agency, Vijverhofstraat 47', desc: 'De webwinkel van een klant gaat zo live, maar zit vol bugs. Plet ze voordat de klant belt.' },
+    { id: 'nachtopvang', npc: n.nasmw, title: 'Nachtopvang', place: 'NAS, Vijverhofstraat 35-37', desc: 'Het wordt donker. Haal de vaste slapers op en breng ze in een stoet naar de nachtopvang.' },
+    { id: 'dealers', npc: n.agent, title: 'Dealers pakken', place: 'Teilingerstraat', desc: 'Drie dealers op scooters. Rij ze klem en tik ze aan voordat ze ervandoor gaan.' },
+    { id: 'frikandel', npc: n.ahmw, title: 'Frikandelbroodjes voor de borrel', place: 'Albert Heijn, Eudokiaplein', desc: 'Breng de frikandelbroodjes naar ROX. Pas op voor botsingen en voor hongerige zwervers.' },
+    { id: 'sambal', npc: n.silvia, title: 'Sambal-uitdaging', place: 'Afhaalrestaurant Silvia, Teilingerstraat', desc: 'Roti met sambal, steeds heter. Eet alles op zonder vuur te spuwen.' },
+    { id: 'kebab', npc: n.sevinc, title: 'Kebab snijden', place: 'Sevinc Pizza, Teilingerstraat', desc: 'Snijd alleen het krokante vlees van de rol.' },
+    { id: 'inparkeren', npc: n.parkeer, title: 'Inparkeren zonder deuk', place: 'Vijverhofstraat', desc: 'Parkeer drie keer in een vak in de Vijverhofstraat. Eén deuk en het is mislukt.' },
+    { id: 'rotzooi', npc: n.veger, title: 'Rotzooi opruimen', place: 'Teilingerstraat', desc: 'Raap de rotzooi op in de Teilingerstraat voordat de vuilniswagen langskomt.' },
+    { id: 'karaoke', npc: n.waard, title: 'Karaoke in Dikke Mic', place: 'Dikke Mic, Vijverhofstraat 47', desc: 'Zing het buurtlied op de maat. Daarna een pilsje (en wordt het avond of weer ochtend).', repeat: true },
+    { id: 'subway', npc: n.subway, title: 'Broodje beleggen', place: 'Subway, Teilingerstraat 83B', desc: 'Lunchrush bij de Subway. Beleg de broodjes in de volgorde van het bonnetje.' },
+    { id: 'reef', npc: n.reefklant, title: 'De klopcode van Café Reef', place: 'Café Reef, Vijverhofstraat 26', desc: 'Het café is dichtgetimmerd, maar binnen zit nog iemand. Klop de geheime code na.' },
+    { id: 'boules', npc: n.boules, title: 'Jeu de boules', place: 'Mooie Boules, Vijverhofstraat 45', desc: 'Gooi je ballen dichter bij het butje dan de tegenstander.' },
+  ].filter((it) => it.npc);
+}
+
+export const AGNIESE_MISSION_OF = {
+  rox: 'rox', nasmw: 'nachtopvang', agent: 'dealers', ahmw: 'frikandel', silvia: 'sambal', sevinc: 'kebab',
+  parkeer: 'inparkeren', veger: 'rotzooi', waard: 'karaoke', boules: 'boules', subway: 'subway', reefklant: 'reef',
+};
+
+// ------------------------------------------------------------ missies
+
+export const agnieseHandlers = {
+  // ---------------------------------------------- ROX Digital Agency
+  async rox(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      'Hé! Jij komt als geroepen. De webwinkel van een klant gaat over een minuut live, en hij zit vol bugs.',
+      'De klant zelf stuurt intussen berichtjes. "Kan het logo groter?" Niet op klikken, anders moet je bellen. En bellen duurt bij deze klant drie kwartier.',
+      R('Niet lullen maar poetsen: plet die bugs voordat ze bij de knop "Bestel nu" zijn.', 'Minder praten, meer doen: plet die bugs voordat ze bij de knop "Bestel nu" zijn.'),
+    ], ['Laptop open!', 'Ik ben geen developer']);
+    if (a !== 0) { await ui.dialog(N, ['Geen developer? Dan word je projectleider. Die hoeven ook niks te kunnen.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('walk');
+    this.setActive('rox', 'Bugs bij ROX', 'Tik de bugs plat voordat ze bij de knop "Bestel nu" zijn. Niet op de berichtjes van de klant tikken.', '');
+    const r = await startBugs(g, { need: 15, limit: 45 });
+    if (!r || this.active?.id !== 'rox') return;
+    if (r.ok) {
+      await ui.dialog(N, [
+        r.leaks ? `Live! Met ${r.leaks} ${r.leaks === 1 ? 'bugje' : 'bugjes'} in productie, maar dat noemen we "features".` : 'Live, zonder één bug! Dat is ons nog nooit gelukt.',
+        'De klant belt: hij vindt het logo nog steeds te klein. Ik zet het in de backlog. Onderaan.',
+      ]);
+      this.complete('rox', 'Bugvrij live bij ROX!');
+    } else {
+      await ui.dialog(N, [r.down ? '500 Error. De klant belt. Ik neem niet op. Jij ook niet.' : 'Deadline gemist. Nou ja, we zeggen gewoon dat het aan de hosting lag.']);
+      this.fail('De site ging niet goed live.');
+    }
+  },
+
+  // ---------------------------------------------- NAS: nachtopvang
+  async nasmw(npc, N, ui, g) {
+    if (this.active?.id === 'nachtopvang') { await ui.dialog(N, [`Nog ${g.followers.length - g.followersJoined()} slapers. Over een paar minuten gaat de deur dicht!`]); return; }
+    const a = await ui.dialog(N, [
+      'Goedenavond. Om tien uur gaat de nachtopvang dicht, en mijn vaste slapers zwerven nog door de buurt.',
+      R('Eentje staat bij de Albert Heijn te bedelen, eentje slaapt in een portiek, en Kees heeft weer een snee in z\'n neus.', 'Eentje staat bij de Albert Heijn te bedelen, eentje slaapt in een portiek, en Kees is weer dronken.'),
+      'Haal ze op en breng ze in een stoet hierheen. Lopend, ze kunnen je fiets niet bijhouden. En niet ademen in hun buurt.',
+    ], ['Ik haal ze op', 'Ik heb een gevoelige neus']);
+    if (a !== 0) { await ui.dialog(N, ['Een gevoelige neus? In de Vijverhofstraat? Dan ben je verkeerd verhuisd.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('walk');
+    const n = g.world.isMobile ? 4 : 5;
+    let i = 0;
+    g.startPolonaise(n, { minD: 40, maxD: 180, color: '#ef6c00', glyph: 'Z', factory: () => makeJunkie(100 + i++),
+      joinLines: ['Krijg ik soep?', 'Ik loop mee als er een pijppie in zit.', 'Is het bed schoon? Maakt niet uit.', 'Wacht, m\'n winkelwagentje!', 'Ik was hier eerst!', 'Hebben ze daar een does?'] });
+    this.setActive('nachtopvang', 'Nachtopvang', 'De slapers staan als oranje punten op de kaart. Loop erheen, dan sloffen ze achter je aan. Breng ze naar de NAS voordat de deur dichtgaat.', `0 / ${n} slapers`);
+    const f = g.facades.frames.nas;
+    const dest = f ? g.world.resolve(f.x + f.nx * 3, f.z + f.nz * 3, 0.6) : [npc.pos.x, npc.pos.z];
+    g.setDestination(dest, 300, async () => {
+      g.stopPolonaise();
+      await ui.dialog(N, ['Allemaal binnen! Vierentwintig bedden, vijf snurkers en één die in zijn slaap zingt. Bedankt.', 'Wil je een bakkie? Het is wel van vanochtend.']);
+      this.complete('nachtopvang', 'Iedereen veilig binnen!');
+    }, (msg) => { g.stopPolonaise(); this.fail(msg || 'De deur is al dicht. Ze slapen vannacht weer in het portiek.'); }, {
+      require: () => (g.followersJoined() >= n ? null : `Je hebt pas ${g.followersJoined()} van de ${n} slapers.`),
+      violate: () => (g.mode !== 'walk' ? 'Lopend! Ze kunnen je niet bijhouden.' : null),
+    });
+  },
+
+  // ---------------------------------------------- dealers pakken
+  async agent(npc, N, ui, g) {
+    const dealers = (g.agniese?.dealers || []).filter((d) => d.kind === 'scooter');
+    if (dealers.length < 3) { await ui.dialog(N, ['Rustig vandaag. Kom later terug.']); return; }
+    const a = await ui.dialog(N, [
+      R('Ik ben de juut van deze wijk. En ik ben het zat.', 'Ik ben de politieagent van deze wijk. En ik ben het zat.'),
+      'Die gasten op de scooters rijden de hele dag rondjes. Met koffers achterop. Ze bezorgen geen pizza, dat weet ik zeker.',
+      'Pak ze voor mij: rij ernaast en tik ze aan. Drie stuks in twee minuten. Ik zou het zelf doen, maar mijn fiets heeft een lekke band. Al sinds 2019.',
+    ], ['Ik pak ze!', 'Ik koop er liever wat']);
+    if (a !== 0) { await ui.dialog(N, ['Dat heb ik niet gehoord. Doorlopen.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('bike');
+    const targets = dealers.slice(0, 3);
+    targets.forEach((d) => { d.caught = false; d.flee = true; d.grp.visible = true; });
+    const marks = targets.map((d) => ({ x: d.grp.position.x, z: d.grp.position.z, color: '#e53935', glyph: '$', done: false }));
+    g.tempMarkers = marks;
+    this.setActive('dealers', 'Dealers pakken', 'De dealers staan als rode punten op de kaart. Rij ernaast en tik ze aan (binnen twee meter). Drie stuks in twee minuten.', '0 / 3 gepakt');
+    const act = this.active;
+    let left = 120, got = 0;
+    const done = (ok) => {
+      g.updaters.delete(upd);
+      targets.forEach((d) => { d.flee = false; });
+      g.tempMarkers = [];
+      g.ui.timer(null);
+      if (this.active !== act) return;
+      if (ok) {
+        ui.dialog(N, ['Drie dealers in de cel! Eén had een koffer vol frikandelbroodjes. Die nemen we in beslag. Voor het onderzoek.']).then(() => this.complete('dealers', 'Dealers gepakt!'));
+      } else this.fail('Ze zijn ervandoor. Morgen rijden ze weer rondjes.');
+    };
+    const upd = (dt) => {
+      if (this.active !== act) { done(false); return; }
+      left -= dt;
+      g.ui.timer(`${Math.max(0, Math.ceil(left))} s`);
+      targets.forEach((d, i) => {
+        if (d.caught) return;
+        marks[i].x = d.grp.position.x; marks[i].z = d.grp.position.z;
+        if (Math.hypot(d.grp.position.x - g.player.x, d.grp.position.z - g.player.z) < 2.2) {
+          d.caught = true; marks[i].done = true; got++;
+          d.grp.visible = false; // afgevoerd
+          g.sfx?.play('whistle');
+          g.ui.toast(['Gepakt! "Ik bezorg alleen pizza, meneer!"', 'Gepakt! "Dit is niet mijn koffer!"', 'Gepakt! "Ik ken mijn rechten! Welke rechten?"'][got - 1] || 'Gepakt!', 2200);
+          this.progress(`${got} / 3 gepakt`);
+          if (got >= 3) done(true);
+        }
+      });
+      if (left <= 0) done(false);
+    };
+    g.updaters.add(upd);
+    act.cleanup = () => { g.updaters.delete(upd); targets.forEach((d) => { d.flee = false; }); g.tempMarkers = []; g.ui.timer(null); };
+    // na de missie komen de dealers vanzelf terug (ze zitten nooit lang vast)
+    setTimeout(() => targets.forEach((d) => { d.caught = false; d.grp.visible = true; }), 200000);
+  },
+
+  // ---------------------------------------------- Albert Heijn: frikandelbroodjes naar ROX
+  async ahmw(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      'Vrijdagmiddagborrel bij ROX aan de Vijverhofstraat. Ze hebben acht frikandelbroodjes besteld, warm uit de oven.',
+      'Breng jij ze? Let op: botsen is een broodje kwijt. En de zwervers in de Vijverhofstraat ruiken ze op honderd meter. Blijf uit hun buurt!',
+      R('Het is een prakkie van niks, maar ze zijn er gek op.', 'Het is een eenvoudig hapje, maar ze zijn er gek op.'),
+    ], ['Geef die bakplaat', 'Ik eet ze zelf op']);
+    if (a !== 0) { await ui.dialog(N, ['Zelf opeten? Allemaal? Dan zie ik je straks bij de huisarts. De pillendraaier, zeggen ze hier.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('walk');
+    this.setActive('frikandel', 'Frikandelbroodjes voor de borrel', 'Breng de frikandelbroodjes naar ROX. Botsen kost een broodje, en zwervers pikken er een als ze dichtbij komen.', 'Broodjes: 8 / 8');
+    const act = this.active;
+    act.noVehicles = true;
+    const tray = makeBroodjesTray();
+    g.holdProp(tray);
+    let left = 8;
+    const lose = (why) => {
+      const b = tray.userData.layers.pop();
+      if (!b) return;
+      tray.remove(b); left--;
+      g.sfx?.play('splat');
+      g.ui.toast(why, 1800);
+      this.progress(`Broodjes: ${left} / 8`);
+      if (left <= 2) { cleanup(); this.fail('Bijna alle frikandelbroodjes zijn weg. De borrel wordt een droge boel.'); }
+    };
+    g.fragile = () => lose('Boem! Daar gaat een frikandelbroodje.');
+    // zwervers komen eropaf
+    if (g.agniese) g.agniese.bait = { steal: () => lose(['"Dank je, maat!" Er is er een weg.', 'Gejat! "Gers broodje, jong."', 'Een zwerver pakt er eentje en rent weg. Nou ja, rent...'][Math.floor(Math.random() * 3)]) };
+    const cleanup = () => { g.fragile = null; g.dropProp(); if (g.agniese) g.agniese.bait = null; };
+    act.cleanup = cleanup;
+    const f = g.facades.frames.rox;
+    const dest = f ? g.world.resolve(f.x + f.nx * 3, f.z + f.nz * 3, 0.6) : [0, 0];
+    g.setDestination(dest, 240, async () => {
+      cleanup();
+      await ui.dialog('De borrel bij ROX', [
+        `${left} frikandelbroodjes! De developers vallen erop aan alsof er een deadline is.`,
+        left === 8 ? 'Alle acht nog heel. Jij mag blijven voor de borrel. Er is bier, en een klant die over zijn logo begint.' : 'Er missen er een paar? Dan zeggen we dat de stagiair ze heeft opgegeten. Dat geloven ze meteen.',
+      ]);
+      this.complete('frikandel', 'Frikandelbroodjes bezorgd!');
+    }, (msg) => { cleanup(); this.fail(msg || 'Te laat. De borrel is al begonnen met chips.'); });
+  },
+
+  // ---------------------------------------------- Silvia: sambal
+  async silvia(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      'Welkom bij Silvia! Roti, bami, moksi meti. En sambal. Veel sambal.',
+      'Mijn huisgemaakte sambal is beroemd in de buurt. De laatste die alles opat, zit nog steeds op de wc. Sinds dinsdag.',
+      'Durf jij? Twaalf happen, steeds heter. Je mag drie keer water drinken. Wie vuur spuwt, betaalt.',
+    ], ['Kom maar op!', 'Doe maar zonder sambal']);
+    if (a !== 0) { await ui.dialog(N, ['Zonder sambal? Dan krijg je een broodje kaas. Van de Subway hiernaast.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('walk');
+    this.setActive('sambal', 'Sambal-uitdaging', 'Twaalf happen roti met steeds hetere sambal. Drie glazen water. Niet boven de 100 procent!', '');
+    const r = await startSambal(g, { need: 12, limit: 45 });
+    if (!r || this.active?.id !== 'sambal') return;
+    if (r.ok) {
+      await ui.dialog(N, ['Alles op! En je ogen tranen niet eens. Nou ja, een beetje.', 'Morgenochtend voel je deze sambal nog een keer. Op de terugweg. Geloof me.']);
+      this.complete('sambal', 'Sambal-kampioen van de Teilingerstraat!');
+    } else {
+      await ui.dialog(N, [r.fire ? 'Vuur! Mijn gordijnen! Ga maar even buiten staan, met je mond open.' : `${r.bites} happen... De rest neem je maar mee. In een bakje. Met extra sambal.`]);
+      this.fail(r.fire ? 'Vuur gespuwd.' : 'Niet alles opgegeten.');
+    }
+  },
+
+  // ---------------------------------------------- Sevinc: kebab snijden
+  async sevinc(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      'Welkom bij Sevinc! Pizza, kapsalon, en de beste kebab van de Teilingerstraat. Van de rol, niet uit een zakje.',
+      'Mijn hulp is er niet. Hij zegt dat hij ziek is, maar ik zag hem net bij de Subway. Verrader.',
+      'Snijd jij? Alleen het krokante, bruine vlees eraf. Het lichte vlees moet nog draaien, anders krijgen de klanten rauwe lappen.',
+    ], ['Geef dat mes', 'Ik ben vegetariër']);
+    if (a !== 0) { await ui.dialog(N, ['Vegetariër? Dan krijg jij een kapsalon zonder vlees. Dat is dus friet met kaas en sla. Ook lekker.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('walk');
+    this.setActive('kebab', 'Kebab snijden', 'Snijd zes keer het krokante vlees van de rol.', '');
+    const r = await startGyros(g, { plates: false, title: 'Kebab snijden bij Sevinc' });
+    if (!r || this.active?.id !== 'kebab') return;
+    if (r.ok) {
+      await ui.dialog(N, [`${r.good} perfecte plakken! Jij mag hier zo beginnen. Zwart, natuurlijk.`, 'Hier, een kapsalon van het huis. Met zoveel knoflooksaus dat je vannacht alleen slaapt.']);
+      this.complete('kebab', 'Kebabmeester van Sevinc!');
+    } else {
+      await ui.dialog(N, ['Rauw, aangebrand, rauw... De klanten gaan nu naar de Subway. Probeer het nog eens.']);
+      this.fail('Te weinig goede plakken.');
+    }
+  },
+
+  // ---------------------------------------------- inparkeren zonder deuk
+  async parkeer(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      R('Bloedverziekend is het hier. Ik rij al een half uur rondjes voor een plekkie.', 'Heel erg vervelend is het hier. Ik rij al een half uur rondjes voor een parkeerplek.'),
+      'Parkeer jij mijn auto? Drie keer in een vak in de Vijverhofstraat. En geen deuk! Mijn man telt de deuken. Hij heeft er een schriftje voor.',
+    ], ['Geef de sleutels', 'Ik heb geen rijbewijs']);
+    if (a !== 0) { await ui.dialog(N, ['Geen rijbewijs? In deze straat heeft niemand een rijbewijs, dat houdt ze ook niet tegen.']); return; }
+    this.setActive('inparkeren', 'Inparkeren zonder deuk', 'Rij de groene auto in het gele vak en sta even stil. Drie vakken. Eén botsing en het is mislukt.', 'Ingeparkeerd: 0 / 3');
+    freeParking(g, [npc.pos.x, npc.pos.z], 6);
+    const r = await startParking(g, [npc.pos.x, npc.pos.z], { need: 3, limit: 150 });
+    if (!r || this.active?.id !== 'inparkeren') return;
+    if (r.none) { await ui.dialog(N, ['Hm, alles staat vol. Natuurlijk. Kom straks maar terug.']); this.abort(); return; }
+    if (r.ok && !r.bumps) {
+      await ui.dialog(N, ['Drie keer erin, zonder één deuk! Mijn man gaat huilen. Van geluk. Of omdat zijn schriftje leeg blijft.']);
+      this.complete('inparkeren', 'Inparkeren zonder deuk!');
+    } else {
+      await ui.dialog(N, [r.bumps ? `${r.bumps === 1 ? 'Eén deuk' : r.bumps + ' deuken'}! Die komt in het schriftje. Met datum en tijd.` : `${r.parked} van de ${r.need}... Ik ga wel met de tram.`]);
+      this.fail(r.bumps ? 'Deuk in de auto.' : 'Niet genoeg ingeparkeerd.');
+    }
+  },
+
+  // ---------------------------------------------- rotzooi opruimen in de Teilingerstraat
+  async veger(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      'Kijk nou. Gisteren alles schoon, vandaag weer een delta. Vuilniszakken, blikjes, pizzadozen, een schoen. Eén schoen. Waar is de andere?',
+      'De vuilniswagen komt over twee minuten. Help je me? Raap alles op in de Teilingerstraat: gewoon ertegenaan lopen.',
+    ], ['Ik pak een vuilniszak', 'Niet mijn rotzooi']);
+    if (a !== 0) { await ui.dialog(N, ['Niet jouw rotzooi? Dat zegt iedereen hier. Daarom ligt het er nog.']); return; }
+    const w = g.world;
+    const path = w.streetPath('Teilingerstraat');
+    if (path.length < 2) return;
+    // twaalf stukken rotzooi langs de stoep
+    const items = [];
+    let tries = 0;
+    while (items.length < 12 && tries++ < 200) {
+      const [x0, z0] = path[Math.floor(Math.random() * path.length)];
+      const ang = Math.random() * 6.28, d = 2.5 + Math.random() * 2.5;
+      const [x, z] = w.resolve(x0 + Math.sin(ang) * d, z0 + Math.cos(ang) * d, 0.4);
+      if (items.some((it) => Math.hypot(it[0] - x, it[1] - z) < 6)) continue;
+      items.push([x, z]);
+    }
+    this.setActive('rotzooi', 'Rotzooi opruimen', 'Loop tegen de rotzooi aan om hem op te rapen (gele punten op de kaart). Alles voordat de vuilniswagen komt.', `0 / ${items.length}`);
+    const act = this.active;
+    let got = 0, left = 120;
+    const timer = setInterval(() => { if (this.active !== act) { clearInterval(timer); return; } left--; g.ui.timer(`${left} s`); if (left <= 0) { clearInterval(timer); this.fail('De vuilniswagen is al geweest. Morgen weer een delta.'); } }, 1000);
+    g.collectibles = items.map(([x, z], k) => {
+      const mesh = makeTrash(k % 4);
+      mesh.position.set(x, w.groundAt(x, z), z);
+      g.scene.add(mesh);
+      const item = {
+        pos: mesh.position, mesh, color: '#fdd835', glyph: '!',
+        cleanup: () => g.scene.remove(mesh),
+        onCollect: async () => {
+          item.cleanup();
+          g.collectibles = g.collectibles.filter((c) => c !== item);
+          got++;
+          this.progress(`${got} / ${items.length}`);
+          if (got >= items.length) {
+            clearInterval(timer); g.ui.timer(null);
+            // de vaste rotzooi in de straat verdwijnt ook (voor even)
+            const grp = g.agniese?.rotzooi?.Teilingerstraat;
+            if (grp) { grp.visible = false; setTimeout(() => { grp.visible = true; }, 240000); }
+            g.player.lockedFor = true;
+            await ui.dialog(N, ['Schoon! De Teilingerstraat glimt. Nou ja, glimt... Hij is in elk geval niet meer plakkerig.', 'Over een uur ligt het er weer. Maar dat is een probleem voor dan.']);
+            g.player.lockedFor = false;
+            this.complete('rotzooi', 'De Teilingerstraat is schoon!');
+          }
+        },
+      };
+      return item;
+    });
+    act.cleanup = () => { clearInterval(timer); g.ui.timer(null); g.collectibles.forEach((c) => c.cleanup?.()); g.collectibles = []; };
+  },
+
+  // ---------------------------------------------- Dikke Mic: karaoke
+  async waard(npc, N, ui, g) {
+    const night = g.night > 0.5;
+    const a = await ui.dialog(N, [night ? 'Nog een rondje karaoke? De microfoon is nog warm.' : 'Welkom in Dikke Mic! Karaoke, spelletjes en eten. Zin om te zingen?'], [night ? 'Nog eentje (tot morgenochtend)' : 'Geef die microfoon!', 'Nee, dank je']);
+    if (a !== 0) return;
+    let sing = !this.done.has('karaoke');
+    if (!sing) sing = (await ui.dialog(N, ['Zing je nog een keer? Het buurtlied, op verzoek van de vaste klant.'], ['Ja, zingen!', 'Nee, gewoon een pilsje'])) === 0;
+    if (sing) {
+      await ui.dialog(N, [
+        'Vanavond op het programma: het buurtlied van de Vijverhofstraat. Zelf geschreven door een vaste klant, na zes pijppies.',
+        'Tik als de noot op de gele lijn staat. Zeventig procent goed en de zaal gaat los.',
+      ]);
+      if (g.mode === 'car') g.exitCar();
+      g.setMode('walk');
+      this.setActive('karaoke', 'Karaoke in Dikke Mic', 'Tik op de maat als de noot op de gele lijn staat.', '');
+      const r = await startKaraoke(g, { need: 0.7 });
+      if (!r || this.active?.id !== 'karaoke') return;
+      this.active = null;
+      if (!r.ok) { await ui.dialog(N, [`${Math.round(r.pct * 100)} procent... De buren bonken op de muur. En dat zijn zwervers, die zijn wat gewend.`]); this.refresh(); return; }
+      await ui.dialog(N, [`${Math.round(r.pct * 100)} procent! De zaal staat op de tafels. Dit was gers, jong.`]);
+    }
+    await g.drinkPils();
+    await ui.dialog(N, [R('Proost! Op Roffa!', 'Proost! Op Rotterdam!')]);
+    await g.skipTime(night ? 15 : 22.5);
+    this.done.add('karaoke');
+    this.save();
+    this.refresh();
+  },
+
+  // ---------------------------------------------- Subway: broodje beleggen
+  async subway(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      'Lunchrush! De halve Teilingerstraat staat in de rij, en mijn collega is buiten aan het roken. Al een uur.',
+      'Help je even? Het broodje schuift over de toonbank. Beleg het precies zoals op het bonnetje, in de goede volgorde.',
+      'Vijf klanten, hooguit drie fouten. En geen jalapeño op het broodje van de agent, die wordt chagrijnig.',
+    ], ['Handschoenen aan!', 'Ik eet alleen bij Sevinc']);
+    if (a !== 0) { await ui.dialog(N, ['Bij Sevinc? Daar krijg je knoflooksaus tot in je sokken. Maar goed, jij je zin.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('walk');
+    this.setActive('subway', 'Broodje beleggen', 'Beleg de broodjes in de volgorde van het bonnetje, voordat ze aan de andere kant van de toonbank zijn.', '');
+    const r = await startSub(g, { need: 5, maxMistakes: 3, limit: 75 });
+    if (!r || this.active?.id !== 'subway') return;
+    if (r.ok) {
+      await ui.dialog(N, [r.mistakes ? `Vijf broodjes, ${r.mistakes} ${r.mistakes === 1 ? 'foutje' : 'foutjes'}. De zwerver kreeg per ongeluk tonijn in plaats van kip. Hij zei dat het de beste dag van zijn leven was.` : 'Vijf broodjes zonder één fout! Jij bent een echte sandwich artist.', 'Hier, een broodje van de zaak. Met extra saus. Niet aan je kleren komen.']);
+      this.complete('subway', 'Sandwich artist van de Teilingerstraat!');
+    } else {
+      await ui.dialog(N, ['De rij staat tot aan de NAS. Mijn collega komt binnen, kijkt, en gaat weer roken. Volgende keer beter.']);
+      this.fail('Te veel fouten of te traag.');
+    }
+  },
+
+  // ---------------------------------------------- Café Reef: de klopcode
+  async reefklant(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      R('Kijk nou. Mijn stamkroeg. Dichtgetimmerd. Bloedverziekend.', 'Kijk nou. Mijn stamkroeg. Dichtgetimmerd. Heel erg vervelend.'),
+      'Maar weet je wat het is? Gerrit zit er nog in. Al sinds de platen ervoor gingen. Hij heeft nog bier voor drie jaar, zegt hij.',
+      'Hij doet alleen open met de geheime klopcode. Ik weet hem niet meer, ik heb een snee in m\'n neus. Luister goed en klop hem na. Dan krijgen we allebei een pijppie door het luikje.',
+    ], ['Ik klop!', 'Dat is toch verboden?']);
+    if (a !== 0) { await ui.dialog(N, ['Verboden? Er staat "niet betreden". Over kloppen staat er niks. Ik heb het drie keer gelezen.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('walk');
+    this.setActive('reef', 'De klopcode van Café Reef', 'Luister naar de klopcode achter de platen en klop hem na in hetzelfde ritme. Drie rondes.', '');
+    const r = await startKlopcode(g, { rounds: 3 });
+    if (!r || this.active?.id !== 'reef') return;
+    if (r.ok) {
+      await g.drinkPils?.();
+      await ui.dialog(N, ['Het luikje gaat open, er komt een hand naar buiten met twee pijppies. "Proost," zegt Gerrit. "En niks tegen de juut zeggen."', 'Café Reef is dicht, maar Café Reef leeft nog! Gerrit vraagt of je volgende week de bitterballen door het luikje komt brengen.']);
+      this.complete('reef', 'Binnen bij Café Reef (een beetje)!');
+    } else {
+      await ui.dialog(N, ['"Wegwezen, juut!" roept Gerrit. Hij denkt dat je van de politie bent. Nou ja, met dat ritme zou ik het ook denken.']);
+      this.fail('Verkeerde klopcode.');
+    }
+  },
+
+  // ---------------------------------------------- Mooie Boules: jeu de boules
+  async boules(npc, N, ui, g) {
+    const a = await ui.dialog(N, [
+      'Welkom bij Mooie Boules! Jeu de boules met een biertje. Een Franse sport, maar wij spelen hem op z\'n Rotterdams: met veel geschreeuw.',
+      'Je tegenstander heeft zijn drie ballen al gegooid. Gooi jij er eentje dichter bij het butje? Eerst richten, dan de kracht.',
+    ], ['Ik gooi!', 'Ik kijk wel']);
+    if (a !== 0) { await ui.dialog(N, ['Kijken mag. Maar dan wel een rondje geven.']); return; }
+    if (g.mode === 'car') g.exitCar();
+    g.setMode('walk');
+    this.setActive('boules', 'Jeu de boules', 'Richten, kracht kiezen, gooien. Drie ballen. Dichter bij het butje dan de tegenstander.', '');
+    const r = await startBoules(g, { throws: 3 });
+    if (!r || this.active?.id !== 'boules') return;
+    if (r.ok) {
+      await ui.dialog(N, [`${Math.round(r.mine * 100)} centimeter van het butje! Je tegenstander gooit zijn pet op de grond. Dat mag hier.`]);
+      this.complete('boules', 'Boules-kampioen van de Vijverhofstraat!');
+    } else {
+      await ui.dialog(N, [`${Math.round(r.mine * 100)} centimeter... Zijn bal lag op ${Math.round(r.theirs * 100)}. Een rondje voor hem dus.`]);
+      this.fail('Verloren met jeu de boules.');
+    }
+  },
+};

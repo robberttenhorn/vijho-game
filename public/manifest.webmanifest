@@ -1,7 +1,7 @@
 {
-  "name": "Locals: Boxmeer",
+  "name": "Locals: Agniesebuurt",
   "short_name": "Locals",
-  "description": "Loop, fiets of rij door het echte Boxmeer en speel missies voor de Boksmèrse dorpsgenoten.",
+  "description": "Loop, fiets of rij door de echte Agniesebuurt in Rotterdam en speel ludieke missies.",
   "lang": "nl",
   "start_url": "./",
   "scope": "./",

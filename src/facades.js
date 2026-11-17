@@ -179,7 +179,7 @@ export class Facades {
       return f;
     };
     // plekken zonder eigen gevel, wel met een plek voor de mensen die er een missie hebben
-    F('basiliek'); F('kasteel'); F('weijer'); F('raadhuisplein');
+    F('rox'); F('hofplein'); F('noordplein'); F('eudokiaplein');
     // winkels, cafés en restaurants op hun eigen adres (shops.js)
     buildShops(this, pois);
   }

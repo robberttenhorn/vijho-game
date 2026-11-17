@@ -25,9 +25,9 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 </style></head><body>
   <div class="bg"></div><div class="shade"></div>
   <div class="box">
-    <h1 class="logo"><span class="logo-main">L<svg class="logo-pin" viewBox="0 0 64 84"><path d="M32 2C16 2 4 14 4 30c0 21 28 50 28 50s28-29 28-50C60 14 48 2 32 2z" fill="currentColor" stroke="#7a3d00" stroke-width="4"/><path d="M19 33 32 21l13 12v13H37v-8h-10v8h-8z" fill="#fff"/></svg>CALS</span><span class="logo-place">Boxmeer</span></h1>
-    <p class="tag">Van het Wieldijkje tot de Steenstraat</p>
-    <p class="sub">Loop, fiets of rij door het echte Boxmeer.<br>Gratis spelen in je browser.</p>
+    <h1 class="logo"><span class="logo-main">L<svg class="logo-pin" viewBox="0 0 64 84"><path d="M32 2C16 2 4 14 4 30c0 21 28 50 28 50s28-29 28-50C60 14 48 2 32 2z" fill="currentColor" stroke="#7a3d00" stroke-width="4"/><path d="M19 33 32 21l13 12v13H37v-8h-10v8h-8z" fill="#fff"/></svg>CALS</span><span class="logo-place">Agniesebuurt</span></h1>
+    <p class="tag">Van het Hofplein tot de Bergweg</p>
+    <p class="sub">Loop, fiets of rij door de echte Agniesebuurt.<br>Gratis spelen in je browser.</p>
   </div>
 </body></html>`;
 

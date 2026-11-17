@@ -1,12 +1,12 @@
-// Noblesse: drie flyers met een kortingscode liggen verspreid door het dorp (ook op de kaart).
-// Heb je ze alle drie, dan komt er een zwarte bus met een grote gouden N voorrijden. Instappen,
+// OQ: drie flyers met een kortingscode liggen verspreid door de buurt (ook op de kaart).
+// Heb je ze alle drie, dan komt er een zwarte bus met een grote gouden OQ voorrijden. Instappen,
 // de bus rijdt een hoekje om, staat vijf seconden te schommelen en te piepen, en daarna stap je
 // vanzelf weer uit. Niets expliciets: je ziet alleen de bus van buiten.
 import { STORE } from './config.js';
 import * as THREE from 'three';
 
 const KEY = STORE + 'sixsense';
-const CODES = ['NOB-BOKSMER', 'NOB-ERPEL', 'NOB-METWORST'];
+const CODES = ['OQ-ROFFA', 'OQ-VIJHO', 'OQ-010'];
 const PINK = '#d4af37'; // goud (de naam PINK is gebleven uit de oude versie)
 
 function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }
@@ -16,15 +16,15 @@ function sixTexture(w = 512, h = 512, big = true) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const x = c.getContext('2d');
   if (!big) { x.fillStyle = '#111'; x.fillRect(0, 0, w, h); }
-  x.font = `900 ${h * (big ? 0.9 : 0.55)}px "Baloo 2", sans-serif`;
+  x.font = `900 ${h * (big ? 0.62 : 0.4)}px "Baloo 2", sans-serif`;
   x.textAlign = 'center'; x.textBaseline = 'middle';
   // gouden N met een verloop, zodat het als metaal glimt
   const y0 = h * (big ? 0.56 : 0.42), fs = h * (big ? 0.9 : 0.55);
   const gr = x.createLinearGradient(0, y0 - fs * 0.45, 0, y0 + fs * 0.45);
   gr.addColorStop(0, '#fff3c4'); gr.addColorStop(0.35, '#e8c25a'); gr.addColorStop(0.6, '#b8860b'); gr.addColorStop(1, '#f5d77a');
   x.shadowColor = 'rgba(212,175,55,0.8)'; x.shadowBlur = h * 0.06;
-  x.fillStyle = gr; x.fillText('N', w / 2, y0);
-  if (!big) { x.shadowBlur = 0; x.fillStyle = '#e8c25a'; x.font = `800 ${h * 0.12}px Inter, sans-serif`; x.fillText('NOBLESSE', w / 2, h * 0.8); }
+  x.fillStyle = gr; x.fillText('OQ', w / 2, y0);
+  if (!big) { x.shadowBlur = 0; x.fillStyle = '#e8c25a'; x.font = `800 ${h * 0.12}px Inter, sans-serif`; x.fillText('OQ', w / 2, h * 0.8); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
@@ -96,17 +96,17 @@ export class SixSense {
   setup() {
     const g = this.g, w = g.world;
     const poi = (id) => w.meta.pois.find((p) => p.id === id);
-    // drie plekken: bij de Albert Heijn, in het Weijerpark en verderop in de Steenstraat
+    // drie plekken: bij de Albert Heijn, op het Hofplein en verderop in de Teilingerstraat
     const spots = [
       ['albertheijn', 'Bij de Albert Heijn'],
-      ['weijer', 'In het Weijerpark'],
-      ['steenstraat', 'Verderop in de Steenstraat'],
+      ['hofplein', 'Op het Hofplein'],
+      ['teilinger', 'Verderop in de Teilingerstraat'],
     ].map(([id, place], i) => {
       let x, z;
-      if (id === 'steenstraat') {
-        // een stuk verderop in de Steenstraat, niet meteen in beeld bij de start
-        const path = w.streetPath('Steenstraat');
-        const p0 = poi('basiliek')?.pos || [0, 0];
+      if (id === 'teilinger') {
+        // een stuk verderop in de Teilingerstraat, niet meteen in beeld bij de start
+        const path = w.streetPath('Teilingerstraat');
+        const p0 = poi('sevinc')?.pos || [0, 0];
         const pick = path?.length ? path.reduce((a, q) => (Math.hypot(q[0] - p0[0], q[1] - p0[1]) < Math.hypot(a[0] - p0[0], a[1] - p0[1]) ? q : a)) : null;
         [x, z] = pick ? w.spotNear(pick[0] + 4, pick[1] + 4) : w.spotNear(20, 0);
       }
@@ -140,7 +140,7 @@ export class SixSense {
 
   // voor de kaart
   markers() {
-    return this.flyers.map((f) => ({ key: 'flyer' + f.i, x: f.x, z: f.z, title: 'Noblesse-flyer', place: `${f.place} · kortingscode ${this.state.found.length + 1}/3`, color: PINK, glyph: 'N', state: 'flyer', stateLabel: 'Flyer', npc: false }));
+    return this.flyers.map((f) => ({ key: 'flyer' + f.i, x: f.x, z: f.z, title: 'OQ-flyer', place: `${f.place} · kortingscode ${this.state.found.length + 1}/3`, color: PINK, glyph: 'Q', state: 'flyer', stateLabel: 'Flyer', npc: false }));
   }
 
   update(dt) {
@@ -177,7 +177,7 @@ export class SixSense {
   showCard(code, n) {
     const el = document.createElement('div');
     el.className = 'six-card';
-    el.innerHTML = `<div class="six-6">N</div><div class="six-name">Noblesse</div><div class="six-deal">20% korting</div><div class="six-code">${code}</div><div class="six-count">${n >= 3 ? 'Alle 3 de codes! Er komt iets aan...' : `Kortingscode ${n} van 3`}</div>`;
+    el.innerHTML = `<div class="six-6">OQ</div><div class="six-name">OQ</div><div class="six-deal">20% korting</div><div class="six-code">${code}</div><div class="six-count">${n >= 3 ? 'Alle 3 de codes! Er komt iets aan...' : `Kortingscode ${n} van 3`}</div>`;
     document.getElementById('hud').appendChild(el);
     setTimeout(() => el.classList.add('out'), 2600);
     setTimeout(() => el.remove(), 3200);
@@ -216,7 +216,7 @@ export class SixSense {
     g.scene.add(bus);
     this.bus = { m: bus, route: r.inPts, s: 0, phase: 'aanrijden', t: 0, onward: r.onward, speed: 12 };
     this.placeOnRoute(this.bus, 0);
-    g.ui.toast('Wat is dat? Een zwarte bus met een grote gouden N komt eraan...', 3200);
+    g.ui.toast('Wat is dat? Een zwarte bus met een grote gouden OQ komt eraan...', 3200);
     g.sfx?.play('honk');
   }
 
@@ -258,7 +258,7 @@ export class SixSense {
           b.phase = 'wachten';
           // zijdeur aan de stoepkant: uitnodiging om in te stappen
           const side = new THREE.Vector3(1.6, 0, -0.5).applyEuler(m.rotation).add(m.position);
-          g.extraInteract = { x: side.x, z: side.z, r: 3, label: 'Instappen in de Noblesse-bus', short: 'Instappen', action: () => this.board() };
+          g.extraInteract = { x: side.x, z: side.z, r: 3, label: 'Instappen in de OQ-bus', short: 'Instappen', action: () => this.board() };
           g.ui.toast('De deur schuift open. Instappen?', 2400);
           g.sfx?.play('door');
         } else if (b.phase === 'hoekje') {

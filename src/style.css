@@ -530,7 +530,7 @@ body.intro #quest-card, body.intro #minimap-wrap, body.intro #btn-vehicle, body.
 #dialog-choices button:nth-child(3) { animation-delay: 0.16s; }
 @keyframes choice-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-/* Noblesse-flyer die even groot in beeld komt */
+/* OQ-flyer die even groot in beeld komt */
 .six-card { position: absolute; left: 50%; top: 22%; transform: translateX(-50%) rotate(-4deg); width: min(240px, 62vw); padding: 14px 16px 16px; border-radius: 10px; background: #111; color: #fff; text-align: center; font-family: Inter, sans-serif; box-shadow: 0 0 0 3px #d4af37, 0 18px 40px rgba(0,0,0,.55), 0 0 40px rgba(212,175,55,.45); animation: six-in .35s cubic-bezier(.2,1.4,.4,1) both; pointer-events: none; z-index: 6; }
 .six-card.out { animation: six-out .5s ease-in both; }
 .six-6 { font: 900 72px/0.9 "Baloo 2", sans-serif; color: #d4af37; text-shadow: 0 0 18px #d4af37; }
@@ -545,7 +545,7 @@ body.intro #quest-card, body.intro #minimap-wrap, body.intro #btn-vehicle, body.
 .bm-gohere { position: absolute; transform: translate(-50%, calc(-100% - 10px)); z-index: 3; padding: 8px 14px; border: 0; border-radius: 999px; background: #ff6b5a; color: #fff; font: 800 14px Inter, sans-serif; box-shadow: 0 6px 18px rgba(0,0,0,.35); cursor: pointer; }
 .bm-gohere::after { content: ''; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #ff6b5a; }
 
-/* tussenscène (Noblesse-bus): geen knoppen, alleen kijken */
+/* tussenscène (OQ-bus): geen knoppen, alleen kijken */
 body.cutscene #touch-ui, body.cutscene #joystick, body.cutscene #btn-action, body.cutscene #btn-vehicle, body.cutscene #prompt,
 body.cutscene #minimap-wrap, body.cutscene #mission-tally, body.cutscene #street-sign, body.cutscene #quest-card, body.cutscene #btn-sound, body.cutscene #race-timer { display: none !important; }
 

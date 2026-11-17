@@ -1,4 +1,4 @@
-// Maakt de achtergrond van het laadscherm: je poppetje in de Steenstraat met de basiliek aan het eind (1920 x 1080,
+// Maakt de achtergrond van het laadscherm: je poppetje voor ROX en Dikke Mic aan de Vijverhofstraat (1920 x 1080,
 // zonder knoppen en teksten), opgeslagen als public/laadbeeld.jpg en een kleine versie public/laadbeeld-klein.jpg.
 // Gebruik: npm run build && npx vite preview --port 4173 &   en dan   node tools/laadbeeld.cjs
 // Maakt ook een staand beeld voor de telefoon: public/laadbeeld-staand.jpg en -klein.jpg (STAAND=0 slaat dat over).
@@ -20,14 +20,13 @@ const { chromium } = require('playwright');
   for (let i = 0; i < 8; i++) { await page.waitForTimeout(300); if (!(await page.evaluate(() => game.ui.dialogOpen)) && i > 1) break; await page.evaluate(() => document.getElementById('dialog').click()); }
   const url = await page.evaluate(() => {
     const g = window.game, p = g.player;
-    // in de Steenstraat, met de vlaggetjes en de toren van de Sint-Petrusbasiliek aan het eind; je poppetje vooraan
-    const T = [343.35, 226.85];
-    let best = null;
-    for (const [x, z] of g.world.streetPath('Steenstraat')) { const d = Math.hypot(x - T[0], z - T[1]); if (x < T[0] && (!best || Math.abs(d - 80) < Math.abs(best.d - 80))) best = { d, x, z }; }
-    [p.x, p.z] = g.world.resolve(best.x, best.z, 0.5);
-    const away = Math.atan2(p.x - T[0], p.z - T[1]); // van de toren af, naar de camera
-    p.heading = away + 0.5; p.speed = 0; p.group.visible = true; // half naar de camera gedraaid
-    g.camYaw = away - 0.12; g.camPitch = 0.04; g.camDist = 6.5; g.lastManualLook = g.time + 1e6;
+    // voor het hoekpand Vijverhofstraat 47: ROX op de derde verdieping, Dikke Mic beneden, je poppetje vooraan
+    const f = g.facades.frames.rox, V = g.camera.position.constructor, w = g.world;
+    [p.x, p.z] = w.resolve(f.x + f.nx * 4.5 - f.ux * 1.2, f.z + f.nz * 4.5 - f.uz * 1.2, 0.4);
+    const C = [f.x + f.nx * 13 + f.ux * 3, f.z + f.nz * 13 + f.uz * 3];
+    p.heading = Math.atan2(C[0] - p.x, C[1] - p.z) + 0.4; p.speed = 0; p.group.visible = true;
+    const cy = w.groundAt(C[0], C[1]) + 1.5;
+    g.pov = { pos: new V(C[0], cy, C[1]), look: new V(f.x - f.ux * 1, w.groundAt(f.x, f.z) + 5.2, f.z - f.uz * 1), snap: true, steady: true };
     if (g.timeOfDay !== 15) { g.timeOfDay = 15; g.applyTime(); }
     g.clock.getDelta();
     for (let i = 0; i < 3; i++) { g.tickInner(); g.updateCamera(0, true); }
@@ -51,20 +50,14 @@ im.resize((960, 540), Image.LANCZOS).save(r'${path.join(root, 'public/laadbeeld-
     await page.waitForTimeout(2500);
     const st = await page.evaluate(() => {
       const g = window.game, p = g.player, V = g.camera.position.constructor, w = g.world;
-      const T = [343.35, 226.85];
-      let best = null;
-      for (const [x, z] of w.streetPath('Steenstraat')) { const d = Math.hypot(x - T[0], z - T[1]); if (x < T[0] && (!best || Math.abs(d - 80) < Math.abs(best.d - 80))) best = { d, x, z }; }
-      const ax = best.x - T[0], az = best.z - T[1], al = Math.hypot(ax, az);
-      const C = [best.x + (ax / al) * 7, best.z + (az / al) * 7]; // camera: van de toren af
-      const dirT = Math.atan2(T[0] - C[0], T[1] - C[1]);
-      const rot = (a, d) => [C[0] + Math.sin(a) * d, C[1] + Math.cos(a) * d];
-      const deg = Math.PI / 180;
-      [p.x, p.z] = w.resolve(...rot(dirT - 9 * deg, 7), 0.4);
+      // staand: camera laag en dichtbij, het ROX-bord en je poppetje samen in de bovenste helft
+      const f = g.facades.frames.rox;
+      [p.x, p.z] = w.resolve(f.x + f.nx * 4 + f.ux * 0.8, f.z + f.nz * 4 + f.uz * 0.8, 0.4);
+      const C = [f.x + f.nx * 11 - f.ux * 1.5, f.z + f.nz * 11 - f.uz * 1.5];
       p.heading = Math.atan2(C[0] - p.x, C[1] - p.z) + 0.45; p.speed = 0; p.group.visible = true;
-      const cy = w.groundAt(C[0], C[1]) + 0.35;
-      const [lx, lz] = rot(dirT - 4.5 * deg, 100);
+      const cy = w.groundAt(C[0], C[1]) + 0.4;
       g.camera.fov = 60; g.camera.aspect = innerWidth / innerHeight; g.camera.updateProjectionMatrix();
-      g.pov = { pos: new V(C[0], cy, C[1]), look: new V(lx, cy + Math.tan(-2 * deg) * 100, lz), snap: true, steady: true };
+      g.pov = { pos: new V(C[0], cy, C[1]), look: new V(f.x, w.groundAt(f.x, f.z) + 7.5, f.z), snap: true, steady: true };
       g.clock.getDelta();
       for (let i = 0; i < 3; i++) { g.tickInner(); g.updateCamera(0, true); }
       g.render();
