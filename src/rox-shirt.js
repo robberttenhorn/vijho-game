@@ -7,7 +7,8 @@ export function roxBackPrint() {
   const draw = () => {
     const x = c.getContext('2d');
     x.clearRect(0, 0, W, H);
-    const lineH = H / 3;
+    // de drie regels staan dicht op elkaar (ze overlappen in het canvas, de letters zelf net niet)
+    const lineH = H / 3, step = 172, top = (H - (2 * step + lineH)) / 2;
     for (let line = 0; line < 3; line++) {
       // eerst recht tekenen op een los canvas
       const t = document.createElement('canvas'); t.width = W; t.height = lineH;
@@ -29,7 +30,7 @@ export function roxBackPrint() {
       // dan vervormd overnemen: verticale golf per kolom en een horizontale golf per rij, elke regel anders
       const t2 = document.createElement('canvas'); t2.width = W; t2.height = lineH;
       const t2x = t2.getContext('2d');
-      const ph = line * 2.1, amp = 9 + line * 3;
+      const ph = line * 2.1, amp = 7 + line * 2;
       for (let col = 0; col < W; col += 2) {
         const dy = Math.sin(col / W * Math.PI * 3 + ph) * amp;
         const sy = 1 + Math.sin(col / W * Math.PI * 2 + ph * 1.7) * 0.12; // letters zwellen op en krimpen
@@ -37,7 +38,7 @@ export function roxBackPrint() {
       }
       for (let row = 0; row < lineH; row += 2) {
         const dx = Math.sin(row / lineH * Math.PI * 2.4 + ph * 1.3) * (6 + line * 2);
-        x.drawImage(t2, 0, row, W, 2, dx, line * lineH + row, W, 2);
+        x.drawImage(t2, 0, row, W, 2, dx, top + line * step + row, W, 2);
       }
     }
   };
