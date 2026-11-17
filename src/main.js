@@ -14,6 +14,7 @@ import { Missions, resetProgress } from './missions.js';
 import { Vehicles, VOLVO_GREY } from './vehicles.js';
 import { Facades } from './facades.js';
 import { volvoSpot38 } from './tuin38.js';
+import { roxBackPrint } from './rox-shirt.js';
 import { buildAgnieseWorld } from './agniese-wereld.js';
 import { Pedestrians } from './pedestrians.js';
 import { Effects, makeFluitje, makeFinishBanner } from './props.js';
@@ -508,7 +509,8 @@ class Game {
   }
 
   setupPlayer() {
-    const model = makeCharacter({ shirt: 0xe8a33d, pants: 0x2e3f5c, hair: 0x3b2a1a });
+    // beige ROX-shirt met drie keer ROX op de rug
+    const model = makeCharacter({ shirt: 0xcbb38c, pants: 0x2e3f5c, hair: 0x3b2a1a, backPrint: roxBackPrint() });
     // start op het Wieldijkje, voor nummer 9
     const home = this.world.meta.pois.find((q) => q.id === 'thuis');
     let start = home ? this.world.spotNear(...home.pos) : this.world.spotNear(5, 25);

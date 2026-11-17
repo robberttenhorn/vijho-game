@@ -30,6 +30,8 @@ export const ZWERVER_LINES = [
   'Waggie open laten staan? Ik pas er wel op. Voor een donnie.',
   'Een barkie? Voor een barkie zing ik het Wilhelmus. Achterstevoren.',
   'Faka? Niks faka. Alles kut, maar wel gers.',
+  'Die ratten hier zijn groter dan m\'n hond. En ik heb niet eens een hond.',
+  'Niet op die rat gaan staan, mattie. Dat is Henk. Henk is van mij.',
   'Die dakhaas daar is van mij. Afblijven.',
 ];
 
@@ -125,6 +127,7 @@ export function buildAgnieseWorld(g) {
   try { out.rotzooi = buildRotzooi(g); } catch (e) { console.warn('rotzooi', e); }
   try { out.zwervers = buildZwervers(g); } catch (e) { console.warn('zwervers', e); }
   try { out.dealers = buildDealers(g); } catch (e) { console.warn('dealers', e); }
+  try { out.ratten = buildRatten(g); } catch (e) { console.warn('ratten', e); }
   g.agniese = out;
   return out;
 }
@@ -146,13 +149,135 @@ function buildRoxSign(g) {
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.05), mat);
   sign.position.set(0, 9.25, 0.04);
   grp.add(sign);
-  // drie verlichte kantoorramen op de derde verdieping: daar wordt hard gewerkt (of gegamed)
-  for (const sx of [-1.6, 0, 1.6]) {
-    const win = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.4), new THREE.MeshStandardMaterial({ color: 0xcfe6ff, emissive: 0x9fc4ff, emissiveIntensity: 0.6, roughness: 0.2 }));
-    win.position.set(sx, 10.75, 0.03); grp.add(win);
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.5, 0.05), std(0x222222)); frame.position.set(sx, 10.75, 0.0); grp.add(frame);
+  let glass = null;
+  try { glass = buildRoxGlass(g, f); } catch (e) { console.warn('rox-glas', e); }
+  return { frame: f, glass };
+}
+
+// De derde verdieping van het hoekpand Vijverhofstraat 47 / Teilingerstraat helemaal rondom van glas, met de
+// branding van ROX erachter. De omtrek is het hoge deel van het pand (dak op ongeveer 17 meter) uit de 3D BAG,
+// overgetrokken uit de dakvlakken; de verdiepingshoogte (begane grond 4 m, daarna 3,3 m) is een schatting.
+const ROX_OUTLINE = [[-7.1, -4.5], [3.3, 4.4], [6.1, 1.2], [7.3, 0.2], [9.2, -2.3], [10.4, -1.3], [11.1, -0.3], [14.9, -5.0], [18.2, -9.0], [16.5, -10.5],
+  [25.5, -21.2], [29.0, -25.5], [31.0, -25.0], [32.0, -29.0], [33.2, -31.3], [36.5, -34.2], [24.2, -40.6], [22.0, -38.8]];
+function roxBrandTexture() {
+  const c = document.createElement('canvas'); c.width = 1536; c.height = 512;
+  const x = c.getContext('2d');
+  const draw = () => {
+  // kantoor erachter: donker blauw, lichtbalken aan het plafond
+  const bg = x.createLinearGradient(0, 0, 0, 512); bg.addColorStop(0, '#1b2440'); bg.addColorStop(0.6, '#0e1530'); bg.addColorStop(1, '#0a0f22');
+  x.fillStyle = bg; x.fillRect(0, 0, 1536, 512);
+  for (let i = 0; i < 6; i++) { x.fillStyle = 'rgba(235,245,255,0.85)'; x.fillRect(40 + i * 256, 26, 170, 10); }
+  // bureaus met schermen onderin
+  for (let i = 0; i < 9; i++) {
+    const dx = 30 + i * 170;
+    x.fillStyle = '#05070f'; x.fillRect(dx, 420, 140, 16); x.fillRect(dx + 10, 436, 8, 60); x.fillRect(dx + 122, 436, 8, 60);
+    x.fillStyle = i % 3 ? '#3d8bff' : '#7ad1ff'; x.fillRect(dx + 30, 362, 74, 50);
+    x.fillStyle = '#05070f'; x.fillRect(dx + 62, 412, 10, 10);
   }
-  return { frame: f };
+  // groot ROX met een blauwe gloed, en de payoff
+  x.textBaseline = 'middle';
+  x.font = '900 250px "Baloo 2", "Arial Black", sans-serif';
+  x.shadowColor = '#2f7bff'; x.shadowBlur = 40; x.fillStyle = '#ffffff'; x.fillText('ROX', 70, 215);
+  x.shadowBlur = 0;
+  x.font = '700 70px Inter, "Helvetica Neue", Arial, sans-serif'; x.fillStyle = '#8fc4ff'; x.fillText('DIGITAL AGENCY', 660, 170);
+  x.font = '600 46px Inter, "Helvetica Neue", Arial, sans-serif'; x.fillStyle = '#d7e6ff'; x.fillText('websites · apps · platforms', 664, 250);
+  // blauwe band als accent
+  x.fillStyle = '#2f6bff'; x.fillRect(660, 300, 760, 12);
+  };
+  draw();
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.anisotropy = 4;
+  if (document.fonts?.ready) document.fonts.ready.then(() => { draw(); tex.needsUpdate = true; });
+  return tex;
+}
+function buildRoxGlass(g, f) {
+  const w = g.world;
+  const base = f.y; // maaiveld bij de voorgevel
+  const Y0 = base + 10.3, Y1 = base + 13.7, H = Y1 - Y0;
+  const tex = roxBrandTexture();
+  const TILE = 9; // meter per herhaling van de branding
+  const ring = ROX_OUTLINE;
+  // buitenom: de ring met de klok mee of tegen de klok in?
+  let area = 0; for (let i = 0; i < ring.length; i++) { const [x1, z1] = ring[i], [x2, z2] = ring[(i + 1) % ring.length]; area += x1 * z2 - x2 * z1; }
+  const sgn = area > 0 ? -1 : 1; // zo wijst de normaal naar buiten
+  const parts = { brand: [], glass: [], alu: [] };
+  // de muurdriehoeken van het pand in de buurt (om de gevel precies te vinden)
+  const tris = [];
+  {
+    const { f32, n } = w.bld;
+    const xs = ring.map((q) => q[0]), zs = ring.map((q) => q[1]);
+    const x0 = Math.min(...xs) - 3, x1 = Math.max(...xs) + 3, z0 = Math.min(...zs) - 3, z1 = Math.max(...zs) + 3;
+    for (let v = 0; v < n; v += 3) {
+      let ok = true;
+      for (let k = 0; k < 3 && ok; k++) { const x = f32[(v + k) * 7], z = f32[(v + k) * 7 + 2]; if (x < x0 || x > x1 || z < z0 || z > z1) ok = false; }
+      if (ok) tris.push([0, 1, 2].map((k) => [f32[(v + k) * 7], f32[(v + k) * 7 + 1], f32[(v + k) * 7 + 2]]));
+    }
+  }
+  // Möller-Trumbore, alleen horizontaal: afstand tot de dichtstbijzijnde muur langs (dx, 0, dz)
+  const wallHit = (ox, oy, oz, dx, dz) => {
+    let best = null;
+    for (const [a, b, c] of tris) {
+      const e1x = b[0] - a[0], e1y = b[1] - a[1], e1z = b[2] - a[2], e2x = c[0] - a[0], e2y = c[1] - a[1], e2z = c[2] - a[2];
+      const px = -dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y; // d x e2 met d = (dx, 0, dz)
+      const det = e1x * px + e1y * py + e1z * pz;
+      if (Math.abs(det) < 1e-9) continue;
+      const inv = 1 / det, tx = ox - a[0], ty = oy - a[1], tz = oz - a[2];
+      const u = (tx * px + ty * py + tz * pz) * inv; if (u < 0 || u > 1) continue;
+      const qx = ty * e1z - tz * e1y, qy = tz * e1x - tx * e1z, qz = tx * e1y - ty * e1x;
+      const vv = (dx * qx + dz * qz) * inv; if (vv < 0 || u + vv > 1) continue;
+      const t = (e2x * qx + e2y * qy + e2z * qz) * inv;
+      if (t > 0 && (best == null || t < best)) best = t;
+    }
+    return best;
+  };
+  let along = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length];
+    const L = Math.hypot(bx - ax, bz - az); if (L < 0.4) continue;
+    const ux = (bx - ax) / L, uz = (bz - az) / L;
+    // normaal naar buiten
+    const nx = -uz * sgn, nz = ux * sgn;
+    const yaw = Math.atan2(nx, nz);
+    const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+    const ext = 0.45; // aan de uiteinden een stukje doorlopen, zodat de hoeken dicht zijn
+    // waar staat de muur echt? (de omtrek is overgetrokken en kan een paar decimeter binnen de gevel liggen)
+    // gemeten met een horizontale straal op het 3D-model, op de hoogte van de verdieping
+    let dW = -Infinity;
+    for (const t of [0.15, 0.35, 0.5, 0.65, 0.85]) {
+      const sx = ax + (bx - ax) * t, sz = az + (bz - az) * t;
+      const hit = wallHit(sx + nx * 3, Y0 + 1.6, sz + nz * 3, -nx, -nz);
+      if (hit != null && hit > 1 && hit < 5) dW = Math.max(dW, 3 - hit);
+    }
+    if (!isFinite(dW)) dW = 0;
+    const place = (geo, off) => { geo.rotateY(yaw); geo.translate(mx + nx * (off + dW), 0, mz + nz * (off + dW)); return geo; };
+    // branding vlak voor de muur
+    const pb = new THREE.PlaneGeometry(L + ext * 2, H - 0.5);
+    const uv = pb.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setX(k, (along - ext + uv.getX(k) * (L + ext * 2)) / TILE);
+    pb.translate(0, Y0 + 0.25 + (H - 0.5) / 2, 0); parts.brand.push(place(pb, 0.08));
+    // glas
+    const gl = new THREE.PlaneGeometry(L + ext * 2, H - 0.5); gl.translate(0, Y0 + 0.25 + (H - 0.5) / 2, 0); parts.glass.push(place(gl, 0.42));
+    // vloer- en plafondrand en stijlen van aluminium
+    for (const y of [Y0 + 0.13, Y1 - 0.13]) { const b = new THREE.BoxGeometry(L + ext * 2, 0.26, 0.55); b.translate(0, y, 0); parts.alu.push(place(b, 0.27)); }
+    for (let d = 0; d <= L + 0.01; d += L / Math.max(1, Math.round(L / 1.6))) {
+      const st = new THREE.BoxGeometry(0.07, H - 0.5, 0.12); st.translate(d - L / 2, Y0 + 0.25 + (H - 0.5) / 2, 0); parts.alu.push(place(st, 0.42));
+    }
+    along += L;
+  }
+  const mats = {
+    brand: new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.6 }),
+    glass: new THREE.MeshStandardMaterial({ color: 0x9cc4dc, transparent: true, opacity: 0.3, roughness: 0.05, metalness: 0.4, depthWrite: false, side: THREE.DoubleSide }),
+    alu: new THREE.MeshStandardMaterial({ color: 0x2b3036, roughness: 0.45, metalness: 0.6 }),
+  };
+  const grp = new THREE.Group();
+  for (const [k, geos] of Object.entries(parts)) {
+    const norm = geos.map((x) => (x.index ? x.toNonIndexed() : x));
+    if (k !== 'brand') for (const y of norm) y.deleteAttribute('uv');
+    const m = new THREE.Mesh(mergeGeometries(norm, false), mats[k]);
+    m.castShadow = k === 'alu'; m.receiveShadow = k !== 'glass';
+    if (k === 'glass') m.renderOrder = 2;
+    grp.add(m);
+  }
+  g.scene.add(grp);
+  return grp;
 }
 
 // ------------------------------------------------------------ het spoorviaduct (Hofpleinlijn, de Hofbogen)
@@ -513,7 +638,8 @@ function buildRotzooi(g) {
   const streets = streetLine(w, ['Vijverhofstraat', 'Teilingerstraat']);
   const groups = {};
   const free = (x, z) => !w.insideBuilding(x, z) && w.classAt(x, z) !== 'rijbaan' && w.classAt(x, z) !== 'water';
-  const bagMat = [std(0x151515, { roughness: 0.35 }), std(0x2a4b8c, { roughness: 0.4 }), std(0x3b3b3b, { roughness: 0.4 })];
+  const trashSpots = [];
+  g.agnieseTrash = trashSpots;
   for (const { name, path } of streets) {
     const grp = new THREE.Group();
     groups[name] = grp;
@@ -528,7 +654,8 @@ function buildRotzooi(g) {
       const r = rnd();
       const item = new THREE.Group();
       if (r < 0.4) {
-        for (let k = 0; k < 1 + Math.floor(rnd() * 3); k++) { const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.32, 1), pick(bagMat)); b.scale.set(1, 0.8 + rnd() * 0.4, 1); b.position.set((rnd() - 0.5) * 0.7, 0.26, (rnd() - 0.5) * 0.7); b.castShadow = true; item.add(b); }
+        for (let k = 0; k < 1 + Math.floor(rnd() * 4); k++) { const b = makeTrashBag(); const sc = 0.8 + rnd() * 0.45; b.scale.setScalar(sc); b.position.set((rnd() - 0.5) * 0.9, 0, (rnd() - 0.5) * 0.9); b.rotation.set((rnd() - 0.5) * 0.3, rnd() * 6, (rnd() - 0.5) * 0.3); item.add(b); }
+        trashSpots.push(spot);
       } else if (r < 0.62) {
         for (let k = 0; k < 4; k++) { const can = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8), std(pick([0xc62828, 0x2e7d32, 0xfdd835, 0xb0bec5]), { metalness: 0.7, roughness: 0.3 })); can.rotation.z = Math.PI / 2; can.rotation.y = rnd() * 6; can.position.set((rnd() - 0.5) * 1.2, 0.035, (rnd() - 0.5) * 1.2); item.add(can); }
         const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.4), std(0xc8a46a)); box.position.y = 0.02; box.rotation.y = rnd(); item.add(box); // pizzadoos
@@ -590,7 +717,7 @@ function buildZwervers(g) {
       // een paar duwen een winkelwagentje met hun spullen
       if (rnd() < 0.3) {
         const cart = makeCart();
-        for (let b = 0; b < 3; b++) { const bag = new THREE.Mesh(new THREE.IcosahedronGeometry(0.18, 1), std(pick([0x1565c0, 0x111111, 0xd32f2f, 0xf5f5f5]))); bag.position.set((rnd() - 0.5) * 0.3, 0.85 + b * 0.1, (rnd() - 0.5) * 0.4); cart.add(bag); }
+        for (let b = 0; b < 3; b++) { const bag = makeTrashBag(); bag.scale.setScalar(0.55); bag.position.set((rnd() - 0.5) * 0.3, 0.62 + b * 0.08, (rnd() - 0.5) * 0.4); bag.rotation.y = rnd() * 6; cart.add(bag); }
         cart.position.set(0, 0, 0.75); m.add(cart); z.cart = cart;
       }
       list.push(z);
@@ -711,4 +838,131 @@ function buildDealers(g) {
     }
   });
   return list;
+}
+
+// ------------------------------------------------------------ vuilniszakken: glimmend plastic, onderin plat, bovenin dichtgeknoopt met twee oortjes
+const BAG_GEOS = [];
+function bagGeo(v) {
+  if (BAG_GEOS[v]) return BAG_GEOS[v];
+  const geo = new THREE.SphereGeometry(0.3, 18, 14);
+  const p = geo.attributes.position;
+  const sd = v * 1.7 + 0.3;
+  for (let i = 0; i < p.count; i++) {
+    let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const t = (y + 0.3) / 0.6; // 0 onder, 1 boven
+    // onderkant plat op de grond, de zak zakt wat uit
+    if (y < -0.1) y = -0.1 + (y + 0.1) * 0.3;
+    const bulge = 1 + 0.12 * (1 - Math.abs(t - 0.35) * 2.2);
+    // bovenin samengeknepen tot een hals
+    const pinch = t > 0.6 ? 1 - Math.pow((t - 0.6) / 0.4, 1.2) * 0.88 : 1;
+    // plooien en kreukels
+    const wr = 1 + 0.07 * Math.sin(Math.atan2(z, x) * (7 + v) + sd) * (0.4 + t) + 0.03 * Math.sin(y * 38 + x * 12 + sd);
+    x *= bulge * pinch * wr * (1.08 - v * 0.04); z *= bulge * pinch * wr * (0.95 + v * 0.05);
+    if (t > 0.6) y += (t - 0.6) * 0.18;
+    p.setXYZ(i, x, y + 0.13, z);
+  }
+  geo.computeVertexNormals();
+  // knoop en twee oortjes
+  const knot = new THREE.SphereGeometry(0.04, 8, 6); knot.scale(1, 0.8, 1); knot.translate(0, 0.53, 0);
+  const ears = [-1, 1].map((sx) => { const e = new THREE.ConeGeometry(0.035, 0.1, 6); e.scale(1, 1, 0.35); e.rotateZ(-sx * 1.0); e.translate(sx * 0.045, 0.56, 0); return e; });
+  const all = [geo, knot, ...ears].map((x) => { const y = x.index ? x.toNonIndexed() : x; y.deleteAttribute('uv'); return y; });
+  BAG_GEOS[v] = mergeGeometries(all, false);
+  return BAG_GEOS[v];
+}
+const BAG_MATS = [];
+export function makeTrashBag() {
+  if (!BAG_MATS.length) {
+    BAG_MATS.push(new THREE.MeshStandardMaterial({ color: 0x0e0e10, roughness: 0.22, metalness: 0.05 }));
+    BAG_MATS.push(new THREE.MeshStandardMaterial({ color: 0x1a1b1e, roughness: 0.28, metalness: 0.05 }));
+    BAG_MATS.push(new THREE.MeshStandardMaterial({ color: 0x45484c, roughness: 0.3, metalness: 0.05 }));
+    BAG_MATS.push(new THREE.MeshStandardMaterial({ color: 0xe9e9e6, roughness: 0.35, metalness: 0 }));
+  }
+  const r = rnd();
+  const m = new THREE.Mesh(bagGeo(Math.floor(rnd() * 3)), BAG_MATS[r < 0.5 ? 0 : r < 0.75 ? 1 : r < 0.9 ? 2 : 3]);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+
+// ------------------------------------------------------------ ratten die bij de vuilniszakken rondscharrelen en wegschieten als je dichtbij komt
+function makeRat() {
+  const grp = new THREE.Group();
+  const fur = std(0x4b4038, { roughness: 0.95 }), pink = std(0xd49a94, { roughness: 0.7 }), black = std(0x050505, { roughness: 0.3 });
+  const body = new THREE.Group(); grp.add(body);
+  const torso = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 9), fur); torso.scale.set(1, 0.82, 1.9); torso.position.set(0, 0.065, 0); body.add(torso);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.13, 10), fur); head.rotation.x = Math.PI / 2; head.position.set(0, 0.068, 0.17); body.add(head);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.011, 6, 5), pink); nose.position.set(0, 0.066, 0.235); body.add(nose);
+  for (const sx of [-1, 1]) {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 6), pink); ear.scale.set(1, 1, 0.35); ear.position.set(sx * 0.03, 0.105, 0.13); body.add(ear);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 5), black); eye.position.set(sx * 0.026, 0.083, 0.185); body.add(eye);
+  }
+  const legs = [];
+  for (const [lx, lz] of [[-0.045, 0.08], [0.045, 0.08], [-0.05, -0.07], [0.05, -0.07]]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.03), pink); l.position.set(lx, 0.02, lz); grp.add(l); legs.push(l); }
+  const tail = new THREE.Group(); tail.position.set(0, 0.05, -0.12); grp.add(tail);
+  const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.02, -0.03, -0.12), new THREE.Vector3(-0.03, -0.045, -0.25), new THREE.Vector3(0.02, -0.045, -0.36)]);
+  tail.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 12, 0.007, 5), pink));
+  grp.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  grp.userData = { body, tail, legs };
+  return grp;
+}
+function buildRatten(g) {
+  const w = g.world;
+  const spots = (g.agnieseTrash || []).slice();
+  if (!spots.length) return [];
+  const free = (x, z) => !w.insideBuilding(x, z) && w.classAt(x, z) !== 'water';
+  const rats = [];
+  const n = Math.min(26, spots.length * 2);
+  for (let i = 0; i < n; i++) {
+    const home = spots[Math.floor(rnd() * spots.length)];
+    const m = makeRat();
+    const x = home[0] + (rnd() - 0.5) * 2, z = home[1] + (rnd() - 0.5) * 2;
+    m.position.set(x, w.groundAt(x, z), z); m.rotation.y = rnd() * 6;
+    g.scene.add(m);
+    rats.push({ m, home, tx: x, tz: z, state: 'sniff', t: rnd() * 2, speed: 0, ph: rnd() * 6, flee: 0 });
+  }
+  g.updaters.add((dt) => {
+    const p = g.player;
+    for (const r of rats) {
+      const m = r.m, d = Math.hypot(m.position.x - p.x, m.position.z - p.z);
+      if (d > 90) { m.visible = false; continue; }
+      m.visible = true;
+      r.t -= dt; r.ph += dt;
+      // schrikken: hard weg van je af
+      if (d < 3.2 && r.flee <= 0) {
+        const ax = m.position.x - p.x, az = m.position.z - p.z, al = Math.hypot(ax, az) || 1;
+        r.tx = m.position.x + (ax / al) * 5; r.tz = m.position.z + (az / al) * 5;
+        if (!free(r.tx, r.tz)) { r.tx = m.position.x + (az / al) * 4; r.tz = m.position.z - (ax / al) * 4; }
+        r.state = 'run'; r.speed = 4.2; r.flee = 1.6;
+      }
+      r.flee -= dt;
+      if (r.state === 'sniff') {
+        // snuffelen: kop op en neer, staart zwiept
+        m.userData.body.rotation.x = Math.sin(r.ph * 9) * 0.06;
+        if (r.t <= 0) {
+          for (let k = 0; k < 6; k++) {
+            const a = rnd() * 6.283, rr = 0.6 + rnd() * 3;
+            const tx = r.home[0] + Math.cos(a) * rr, tz = r.home[1] + Math.sin(a) * rr;
+            if (free(tx, tz)) { r.tx = tx; r.tz = tz; break; }
+          }
+          r.state = 'run'; r.speed = 1.4 + rnd() * 1.4;
+        }
+      } else {
+        const dx = r.tx - m.position.x, dz = r.tz - m.position.z, dl = Math.hypot(dx, dz);
+        if (dl < 0.15) { r.state = 'sniff'; r.t = 0.6 + rnd() * 2.5; }
+        else {
+          const step = Math.min(dl, r.speed * dt);
+          const nx2 = m.position.x + (dx / dl) * step, nz2 = m.position.z + (dz / dl) * step;
+          if (free(nx2, nz2)) { m.position.x = nx2; m.position.z = nz2; } else { r.state = 'sniff'; r.t = 0.3; }
+          m.position.y = w.groundAt(m.position.x, m.position.z);
+          const want = Math.atan2(dx, dz);
+          let da = want - m.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
+          m.rotation.y += da * Math.min(1, dt * 14);
+          // trippelen
+          m.userData.body.position.y = Math.abs(Math.sin(r.ph * 28)) * 0.012;
+          m.userData.legs.forEach((l, k) => { l.position.y = 0.02 + Math.max(0, Math.sin(r.ph * 28 + (k % 2) * Math.PI)) * 0.012; });
+        }
+      }
+      m.userData.tail.rotation.y = Math.sin(r.ph * (r.state === 'run' ? 14 : 3)) * 0.35;
+    }
+  });
+  return rats;
 }

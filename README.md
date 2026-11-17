@@ -19,7 +19,7 @@ Open daarna de link die Vite toont (meestal http://localhost:5173). Online: http
 - Computer: WASD of pijltjes om te bewegen, Shift om te rennen, muis slepen om te kijken, E om te praten of in en uit te stappen, F voor fiets of skateboard, spatie als handrem, M voor de kaart.
 - Mobiel: joystick links, slepen op de rechterhelft om te kijken, knoppen rechtsonder. Tik op de minikaart voor de grote kaart.
 
-Je begint voor ROX Digital Agency aan de Vijverhofstraat 47.
+Je begint voor ROX Digital Agency aan de Vijverhofstraat 47, in een beige ROX-shirt met drie keer ROX op de rug.
 
 ## Plekken
 
@@ -37,7 +37,9 @@ Je begint voor ROX Digital Agency aan de Vijverhofstraat 47.
 
 Langs de Vijverhofstraat loopt de Hofbogen, het oude spoorviaduct van de Hofpleinlijn, op de hoogte van de eerste verdieping. In de plint zitten panden achter bogen, waaronder het dichtgetimmerde Café Reef. Het viaduct heeft licht beton met reliëfpanelen, een donkere kroonlijst met consoles, bovenleidingmasten en een dubbel spoor. Waar de Teilingerstraat en de andere straten eronderdoor lopen, staat een grote, vlakke boog op zware pijlers van natuursteen. De ligging komt uit de BGT; het uiterlijk is nagemaakt naar een Street View-beeld van de maker.
 
-In de Vijverhofstraat en de Teilingerstraat liggen vuilniszakken, blikjes, pizzadozen, matrassen en omgevallen winkelwagentjes, en staat graffiti op de gevels. Zwervers en verslaafden sloffen rond, zitten op een stuk karton of liggen in een slaapzak, en roepen af en toe iets in het Rotterdams. Dealers rijden rondjes op scooters, en een zwarte auto met getinte ramen rijdt stapvoets door de Vijverhofstraat.
+De derde verdieping van het hoekpand van ROX is helemaal rondom van glas, met de branding van ROX erachter (de omtrek komt uit de 3D BAG, de verdiepingshoogte is geschat).
+
+In de Vijverhofstraat en de Teilingerstraat liggen vuilniszakken, blikjes, pizzadozen, matrassen en omgevallen winkelwagentjes, en staat graffiti op de gevels. Zwervers en verslaafden sloffen rond, zitten op een stuk karton of liggen in een slaapzak, en roepen af en toe iets in het Rotterdams. Bij de vuilniszakken scharrelen ratten rond, die wegschieten als je te dichtbij komt. Dealers rijden rondjes op scooters, en een zwarte auto met getinte ramen rijdt stapvoets door de Vijverhofstraat.
 
 ## Missies
 

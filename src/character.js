@@ -644,10 +644,49 @@ export function makeCharacter(opts = {}) {
   // Buiten beeld niet tekenen. De omhullende bol van een bewegend skelet klopt niet vanzelf, daarom een vaste,
   // ruime bol om het hele poppetje (ook met een arm omhoog of zittend).
   mesh.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.95, 0), 1.5);
+  // opdruk op de rug van het shirt (een canvas): een eigen stukje huid op hetzelfde skelet, zodat het met de romp meebuigt
+  let printMesh = null;
+  if (opts.backPrint && !coat && !jacket) {
+    const tex = new THREE.CanvasTexture(opts.backPrint); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    if (opts.backPrint.redraw && document.fonts?.ready) document.fonts.ready.then(() => { opts.backPrint.redraw(); tex.needsUpdate = true; });
+    const y0 = 1.0, y1 = 1.45, A = 1.0, cols = 18, rows = 16, e = 2 / 2.35;
+    const pos = [], nrm = [], uv = [], si = [], sw = [], idx = [];
+    for (let j = 0; j <= rows; j++) {
+      const y = y0 + (y1 - y0) * (j / rows);
+      const r = torsoR(y), ex = LOOSE * smooth(1.5, 1.4, y) + 0.0035;
+      const ws = torsoW(y);
+      for (let i = 0; i <= cols; i++) {
+        const a = Math.PI - A + 2 * A * (i / cols), sn = Math.sin(a), cs = Math.cos(a);
+        const px = spow(sn, e) * (r.rx + ex), pz = r.z + spow(cs, e) * (r.rzb + ex);
+        pos.push(px, y, pz);
+        const nx = px / ((r.rx + ex) ** 2), nz = (pz - r.z) / ((r.rzb + ex) ** 2), nl = Math.hypot(nx, nz) || 1;
+        nrm.push(nx / nl, 0, nz / nl);
+        uv.push(i / cols, j / rows);
+        const tot = ws.reduce((t, q) => t + q[1], 0) || 1;
+        for (let k = 0; k < 4; k++) { si.push(ws[k] ? ws[k][0] : 0); sw.push(ws[k] ? ws[k][1] / tot : 0); }
+      }
+    }
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const a0 = j * (cols + 1) + i, b0 = a0 + cols + 1;
+      idx.push(a0, a0 + 1, b0, a0 + 1, b0 + 1, b0);
+    }
+    const pg = new THREE.BufferGeometry();
+    pg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    pg.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+    pg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    pg.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
+    pg.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+    pg.setIndex(idx);
+    printMesh = new THREE.SkinnedMesh(pg, new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.35, roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }));
+    printMesh.bind(mesh.skeleton, mesh.bindMatrix);
+    printMesh.boundingSphere = mesh.boundingSphere;
+    printMesh.frustumCulled = false;
+  }
 
   const root = new THREE.Group();
   const body = new THREE.Group();
   body.add(mesh);
+  if (printMesh) body.add(printMesh);
   root.add(body);
   root.scale.setScalar(scale);
 
