@@ -180,6 +180,8 @@ export class Vehicles {
     const rand = Math.random;
     const mobile = this.world.isMobile;
     const spots = this.world.parkingSpots.filter(() => rand() < (mobile ? 0.4 : 0.6));
+    // husselen, zodat de auto's over alle straten verdeeld staan (en niet alleen in de eerste straten van de lijst)
+    for (let i = spots.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [spots[i], spots[j]] = [spots[j], spots[i]]; }
     const max = mobile ? 55 : 120;
     const typeKeys = ['hatch', 'hatch', 'sedan', 'sedan', 'suv', 'suv', 'van', 'sport'];
     const list = [];

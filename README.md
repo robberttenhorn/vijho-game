@@ -35,6 +35,8 @@ Je begint voor ROX Digital Agency aan de Vijverhofstraat 47, in een beige ROX-sh
 | Sevinc Pizza | Teilingerstraat 67C |
 | Winkelcentrum Eudokiaplein, met binnen de Albert Heijn en Kippie | Eudokiaplein 12 (ingang) |
 
+Aan de westkant staat Rotterdam Centraal, eenvoudig nagemaakt: de hal met het schuine puntdak (boven staal, onder hout) en de letters CENTRAAL STATION, een glazen passage naar de noordkant en de grote perronkap over de sporen. De omtrek komt uit de 3D BAG; de hoogtes en de maten van de perronkap zijn geschat. Er staan geparkeerde auto's langs de stoep waar je in kunt stappen.
+
 Langs de Vijverhofstraat loopt de Hofbogen, het oude spoorviaduct van de Hofpleinlijn, op de hoogte van de eerste verdieping. In de plint zitten panden achter bogen, waaronder het dichtgetimmerde Café Reef. Het viaduct heeft licht beton met reliëfpanelen, een donkere kroonlijst met consoles, bovenleidingmasten en een dubbel spoor. Waar de Teilingerstraat en de andere straten eronderdoor lopen, staat een grote, vlakke boog op zware pijlers van natuursteen. De ligging komt uit de BGT; het uiterlijk is nagemaakt naar een Street View-beeld van de maker.
 
 Vijverhofstraat 47 is nagemaakt naar een Street View-beeld van de maker: een kantoorpand met een vliesgevel van glas en lichtgrijze borstweringspanelen in een raster van donkere stijlen, rondom, ook langs de Teilingerstraat. Op de derde verdieping zit ROX, met de branding achter het glas. Beneden een pui met donkere kozijnen op een lage bakstenen borstwering en de witte entree met de 47. Rechts ernaast het lage pand met een blauwe deur en de ingang van Dikke Mic onder een rode luifel, en voor de deur een terras met plantenbakken, picknicktafels en lichtsnoeren. De omtrek komt uit de 3D BAG; de verdiepingshoogtes zijn geschat.
@@ -58,6 +60,16 @@ In de Vijverhofstraat en de Teilingerstraat liggen vuilniszakken, blikjes, pizza
 | Jeu de boules: dichter bij het butje dan de tegenstander | Mooie Boules |
 | Broodje beleggen: beleg de subs in de volgorde van het bonnetje | Subway, Teilingerstraat |
 | De klopcode van Café Reef: klop de geheime code na, dan gaat het luikje open | Café Reef, Vijverhofstraat 26 |
+| De laatste trein: verzamel een verdwaald vrijgezellenfeest en breng ze in een stoet naar Rotterdam Centraal | Dikke Mic → Rotterdam Centraal |
+| Taxi!: de taxichauffeur moet plassen; rij drie klanten rond, elke botsing kost een ster | Stationsplein |
+| Zwartrijder: haal de zwartrijder in de gele jas in en tik hem aan | Rotterdam Centraal |
+| Rattenvanger: vang acht ratten bij de vuilniszakken | Teilingerstraat |
+| Statiegeld: raap blikjes en flesjes op voor Statiegeld-Stefan, voor de concurrentie ze pakt, en lever ze in | Albert Heijn, Eudokiaplein |
+| Graffiti op de Hofbogen: zet zes tags op de bogen, uit het zicht van de agent | Vijverhofstraat |
+| Rood-wit: hang acht vlaggen op in de straat voor de wedstrijd | Vijverhofstraat en Teilingerstraat |
+| Rijexamen op het Hofplein: drie rondjes over de rotonde langs de poortjes, hooguit twee botsingen | Hofplein |
+| Spreek je Rotterdams?: Ome Kees overhoort je, zes van de acht goed | Noordplein |
+| Kapsalon bezorgen: drie kapsalons op de fiets, voordat de kaas rubber wordt | Sevinc Pizza, Teilingerstraat |
 
 Na de laatste missie geeft de gastheer van Dikke Mic een feest in de Vijverhofstraat: je wordt Ereburger van de Agniesebuurt.
 

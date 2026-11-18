@@ -16,6 +16,7 @@ import { Facades } from './facades.js';
 import { volvoSpot38 } from './tuin38.js';
 import { roxBackPrint } from './rox-shirt.js';
 import { buildAgnieseWorld } from './agniese-wereld.js';
+import { addCurbParking } from './agniese.js';
 import { Pedestrians } from './pedestrians.js';
 import { Effects, makeFluitje, makeFinishBanner } from './props.js';
 import { statsStart, statsPageview, statsError, statsPerf } from './stats.js';
@@ -109,6 +110,7 @@ class Game {
     try { buildAgnieseWorld(this); } catch (e) { console.warn('Agniesebuurt: zwervers, dealers en rotzooi', e); }
     this.spawnVolvo();
     this.farm = this.findFarm();
+    try { addCurbParking(this.world); } catch (e) { console.warn('parkeren langs de stoep', e); }
     this.cars.spawnParked(this.farm ? [{ type: 'tractor', x: this.farm.tx, z: this.farm.tz, heading: this.farm.heading, paint: 0xb71c1c, opts: { isTractor: true } }] : []);
     this.tractor = this.cars.cars.find((c) => c.isTractor);
     this.fishing = this.findFishingSpot();
@@ -1741,7 +1743,7 @@ class Game {
   updateInteractions(dt) {
     const p = this.player;
     for (const c of this.collectibles) {
-      c.mesh.rotation.y += dt * 2.5;
+      if (c.mesh) c.mesh.rotation.y += dt * 2.5;
       if (this.ui.dialogOpen || p.lockedFor) continue; // niet twee dingen tegelijk oppakken
       if (Math.hypot(p.x - c.pos.x, p.z - c.pos.z) < (this.mode === 'car' ? 3.5 : 2.2)) { this.sfx.play('coin'); c.onCollect(); break; }
     }

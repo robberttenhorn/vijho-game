@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { makeCharacter } from './character.js';
 import { makeCart } from './props.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { buildCentraal } from './centraal.js';
 
 const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.8, ...extra });
 let seedV = 4242;
@@ -122,6 +123,7 @@ export function buildAgnieseWorld(g) {
   const out = {};
   try { out.rox = buildRoxSign(g); } catch (e) { console.warn('ROX-bord', e); }
   try { out.viaduct = buildViaduct(g); } catch (e) { console.warn('viaduct', e); }
+  try { out.centraal = buildCentraal(g); } catch (e) { console.warn('Rotterdam Centraal', e); }
   g.agniese = out;
   try { out.reef = buildReef(g); } catch (e) { console.warn('Café Reef', e); }
   try { out.rotzooi = buildRotzooi(g); } catch (e) { console.warn('rotzooi', e); }
@@ -1098,6 +1100,7 @@ function buildRatten(g) {
     const p = g.player;
     for (const r of rats) {
       const m = r.m, d = Math.hypot(m.position.x - p.x, m.position.z - p.z);
+      if (r.caught) { m.visible = false; continue; } // gevangen (missie Rattenvanger)
       if (d > 90) { m.visible = false; continue; }
       m.visible = true;
       r.t -= dt; r.ph += dt;

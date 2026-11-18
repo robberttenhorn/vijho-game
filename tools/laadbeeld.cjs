@@ -1,4 +1,4 @@
-// Maakt de achtergrond van het laadscherm: je poppetje voor ROX en Dikke Mic aan de Vijverhofstraat (1920 x 1080,
+// Maakt de achtergrond van het laadscherm: je poppetje voor Vijverhofstraat 47 (ROX) en Dikke Mic (1920 x 1080,
 // zonder knoppen en teksten), opgeslagen als public/laadbeeld.jpg en een kleine versie public/laadbeeld-klein.jpg.
 // Gebruik: npm run build && npx vite preview --port 4173 &   en dan   node tools/laadbeeld.cjs
 // Maakt ook een staand beeld voor de telefoon: public/laadbeeld-staand.jpg en -klein.jpg (STAAND=0 slaat dat over).
@@ -20,13 +20,15 @@ const { chromium } = require('playwright');
   for (let i = 0; i < 8; i++) { await page.waitForTimeout(300); if (!(await page.evaluate(() => game.ui.dialogOpen)) && i > 1) break; await page.evaluate(() => document.getElementById('dialog').click()); }
   const url = await page.evaluate(() => {
     const g = window.game, p = g.player;
-    // voor het hoekpand Vijverhofstraat 47: ROX op de derde verdieping, Dikke Mic beneden, je poppetje vooraan
+    // Vijverhofstraat 47 schuin van de overkant: de glazen gevel met ROX op de derde verdieping, de entree met de 47,
+    // rechts het lage pand met Dikke Mic en het terras, en je poppetje vooraan op de stoep
     const f = g.facades.frames.rox, V = g.camera.position.constructor, w = g.world;
-    [p.x, p.z] = w.resolve(f.x + f.nx * 4.5 + f.ux * 1.0, f.z + f.nz * 4.5 + f.uz * 1.0, 0.4);
-    const C = [f.x + f.nx * 12 - f.ux * 5, f.z + f.nz * 12 - f.uz * 5];
-    p.heading = Math.atan2(C[0] - p.x, C[1] - p.z) + 0.4; p.speed = 0; p.group.visible = true;
-    const cy = w.groundAt(C[0], C[1]) + 1.5;
-    g.pov = { pos: new V(C[0], cy, C[1]), look: new V(f.x - f.ux * 1, w.groundAt(f.x, f.z) + 5.2, f.z - f.uz * 1), snap: true, steady: true };
+    const C = [f.x + f.nx * 13 - f.ux * 10, f.z + f.nz * 13 - f.uz * 10];
+    [p.x, p.z] = w.resolve(f.x + f.nx * 6.5 - f.ux * 6.5, f.z + f.nz * 6.5 - f.uz * 6.5, 0.4);
+    // met de rug naar de camera, zodat het ROX-shirt in beeld is
+    p.heading = Math.atan2(p.x - C[0], p.z - C[1]) - 0.35; p.speed = 0; p.group.visible = true;
+    const cy = w.groundAt(C[0], C[1]) + 1.6;
+    g.pov = { pos: new V(C[0], cy, C[1]), look: new V(f.x - f.ux * 3, w.groundAt(f.x, f.z) + 7.0, f.z - f.uz * 3), snap: true, steady: true };
     if (g.timeOfDay !== 15) { g.timeOfDay = 15; g.applyTime(); }
     g.clock.getDelta();
     for (let i = 0; i < 3; i++) { g.tickInner(); g.updateCamera(0, true); }
@@ -50,17 +52,22 @@ im.resize((960, 540), Image.LANCZOS).save(r'${path.join(root, 'public/laadbeeld-
     await page.waitForTimeout(2500);
     const st = await page.evaluate(() => {
       const g = window.game, p = g.player, V = g.camera.position.constructor, w = g.world;
-      // staand: camera laag en dichtbij, het ROX-bord en je poppetje samen in de bovenste helft
-      // camera ver weg en laag (schuin door de straat), zodat het ROX-bord en je poppetje allebei in de bovenste helft staan
+      // staand: vanuit de Teilingerstraat, laag, zodat het hele glazen pand en je poppetje (met de rug
+      // naar de camera, het ROX-shirt in beeld) in de bovenste helft staan
       const f = g.facades.frames.rox, deg = Math.PI / 180;
-      const C = [f.x + f.nx * 9 - f.ux * 18, f.z + f.nz * 9 - f.uz * 18];
-      const dirF = Math.atan2(f.x - C[0], f.z - C[1]);
-      [p.x, p.z] = w.resolve(C[0] + Math.sin(dirF - 9 * deg) * 8, C[1] + Math.cos(dirF - 9 * deg) * 8, 0.4);
-      p.heading = Math.atan2(C[0] - p.x, C[1] - p.z) + 0.45; p.speed = 0; p.group.visible = true;
-      const cy = w.groundAt(C[0], C[1]) + 0.35;
+      // de camera in de Teilingerstraat, langs de lange glazen zijgevel, kijkend naar de hoek met de Vijverhofstraat
+      const K = [f.x + f.ux * 7, f.z + f.uz * 7]; // de hoek van het pand
+      const sideU = [Math.cos(Math.atan2(-34.3, 29.1)), Math.sin(Math.atan2(-34.3, 29.1))]; // langs de zijgevel, van de hoek af
+      const out = [sideU[1], -sideU[0]]; // van de zijgevel af, de straat in
+      let C = [K[0] + sideU[0] * 25 + out[0] * 8, K[1] + sideU[1] * 25 + out[1] * 8];
+      C = w.resolve(C[0], C[1], 0.5);
+      const dirK = Math.atan2(K[0] - C[0], K[1] - C[1]);
+      [p.x, p.z] = w.resolve(C[0] + Math.sin(dirK + 6 * deg) * 8, C[1] + Math.cos(dirK + 6 * deg) * 8, 0.4);
+      p.heading = Math.atan2(p.x - C[0], p.z - C[1]) + 0.25; p.speed = 0; p.group.visible = true;
+      const cy = w.groundAt(C[0], C[1]) + 0.6;
       g.camera.fov = 60; g.camera.aspect = innerWidth / innerHeight; g.camera.updateProjectionMatrix();
-      const lx = C[0] + Math.sin(dirF - 3 * deg) * 100, lz = C[1] + Math.cos(dirF - 3 * deg) * 100;
-      g.pov = { pos: new V(C[0], cy, C[1]), look: new V(lx, cy + Math.tan(0.5 * deg) * 100, lz), snap: true, steady: true };
+      const lx = C[0] + Math.sin(dirK + 4 * deg) * 100, lz = C[1] + Math.cos(dirK + 4 * deg) * 100;
+      g.pov = { pos: new V(C[0], cy, C[1]), look: new V(lx, cy + Math.tan(6 * deg) * 100, lz), snap: true, steady: true };
       g.clock.getDelta();
       for (let i = 0; i < 3; i++) { g.tickInner(); g.updateCamera(0, true); }
       g.render();

@@ -18,9 +18,15 @@ const OUT = path.resolve('public/data');
 // Oorsprong van de spelwereld: Vijverhofstraat 47, in RD-coördinaten (EPSG:28992).
 const ORIGIN = { x: 92385, y: 438267 }; // Vijverhofstraat 47 (ROX Digital Agency)
 
-// Speelgebied: de Agniesebuurt en omgeving, tussen Hofplein, Noordplein, Eudokiaplein en Bergweg.
+// Speelgebied: de Agniesebuurt en omgeving, tussen Hofplein, Noordplein, Eudokiaplein en Bergweg, en aan de
+// westkant tot en met Rotterdam Centraal en het Stationsplein.
 // Daaromheen een groter gebied voor de horizon (het centrum van Rotterdam).
-const CORE = { minX: 91850, minY: 437560, maxX: 93000, maxY: 439200, res: 2 };
+const CORE = { minX: 91450, minY: 437450, maxX: 93000, maxY: 439200, res: 2 };
+
+// Rotterdam Centraal (pand uit 2013): dit gebouw krijgt in de game een eigen model (src/centraal.js). Uit de 3D BAG
+// nemen we alleen de omtrek (voor botsingen en als basis voor het model), niet de gebouwvorm zelf.
+const STATION_PAND = 'NL.IMBAG.Pand.0599100100007430';
+let stationRing = null;
 const WIDE = { minX: 88200, minY: 434200, maxX: 96600, maxY: 442600, res: 20 };
 
 // Plekken (adres en ligging via de PDOK Locatieserver; namen opgegeven door de maker of uit online gidsen)
@@ -39,6 +45,7 @@ const POIS = [
   { id: 'eudokiaplein', name: 'Eudokiaplein', address: 'Eudokiaplein', x: 92007.1, y: 438626.8 },
   { id: 'vijverhofstraat', name: 'Vijverhofstraat', address: 'Vijverhofstraat', x: 92400, y: 438255 },
   { id: 'teilingerstraat', name: 'Teilingerstraat', address: 'Teilingerstraat', x: 92353.3, y: 438257.2 },
+  { id: 'centraal', name: 'Rotterdam Centraal', address: 'Stationsplein 1', x: 91884, y: 437655 },
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -159,7 +166,9 @@ function addBuilding(feat, tf, out, footprints) {
   if (lod0) {
     const ring = lod0.boundaries[0][0].map((i) => local(verts[i][0], verts[i][1]).map(r1));
     footprints.push({ ring, h: r1((attrs.b3_h_nok ?? ground + 6) - ground), g: r1(ground) });
+    if (parentId === STATION_PAND) stationRing = ring;
   }
+  if (parentId === STATION_PAND) return; // eigen model in de game
 
   for (const childId of parent.children || []) {
     const child = feat.CityObjects[childId];
@@ -431,6 +440,7 @@ async function main() {
     core: { ...CORE, w: core.w, h: core.h },
     wide: { ...WIDE, w: wide.w, h: wide.h },
     pois: POIS.map((p) => ({ ...p, pos: local(p.x, p.y) })),
+    station: stationRing,
     generated: new Date().toISOString(),
     attribution: '3D BAG (TU Delft / 3DGI, CC BY 4.0), AHN (Rijkswaterstaat, CC0), BGT en NWB (PDOK, CC0)',
   };

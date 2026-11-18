@@ -16,6 +16,8 @@ function overlay(g, title, inner, hint) {
   document.getElementById('hud').prepend(ov);
   document.body.classList.add('pov');
   ov.querySelector('.mini-stop').addEventListener('click', () => g.missions.stop());
+  // tikken of klikken in het spel telt als 'actie' (zoals spatie of E), behalve op knoppen
+  ov.addEventListener('pointerdown', (e) => { if (!e.target.closest('button')) g.input.actionPressed = true; });
   return { ov, close: () => { ov.remove(); document.body.classList.remove('pov'); }, score: (t) => { ov.querySelector('.mini-score').textContent = t; } };
 }
 const pressed = (g) => { const p = g.input.consumeAction() || g.input.spacePressed; g.input.spacePressed = false; return p; };
@@ -261,7 +263,7 @@ export function startBugs(g, { need = 15, limit = 45 } = {}) {
 // dichter bij het butje ligt dan de beste bal van de tegenstander.
 export function startBoules(g, { throws = 3 } = {}) {
   const ui = overlay(g, 'Jeu de boules bij Mooie Boules', '<canvas class="mini-canvas"></canvas>',
-    g.input.isTouch ? 'Tik om te richten, en tik nog eens om de kracht te kiezen.' : 'Spatie of E om te richten, nog eens om de kracht te kiezen.');
+    g.input.isTouch ? 'De lijn zwaait heen en weer: tik als hij goed staat. Tik daarna nog eens om de kracht te kiezen.' : 'De lijn zwaait heen en weer: klik (of spatie) als hij goed staat. Daarna nog eens voor de kracht.');
   const cv = ui.ov.querySelector('canvas'), ctx = cv.getContext('2d');
   fitCanvas(cv);
   ui.ov.style.background = '#2b2118';

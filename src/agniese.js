@@ -7,6 +7,7 @@ import { startGyros } from './skills2.js';
 import { startParking } from './skills.js';
 import { startSambal, startKaraoke, startBugs, startBoules, startSub, startKlopcode, startFrituur } from './agniese-skills.js';
 import { makeJunkie, makeRat } from './agniese-wereld.js';
+import { setupAgniese2, agnieseItems2, agnieseHandlers2, AGNIESE2_MISSION_OF } from './agniese2.js';
 
 // Rotterdamse zin met Nederlandse vertaling
 const R = (text, nl) => ({ text, nl });
@@ -71,7 +72,7 @@ function makeTrash(kind) {
 }
 
 // Parkeerplekken langs de stoep van een straat: om de zes meter, aan beide kanten, net binnen de rand van de rijbaan.
-function curbSpots(w, name) {
+function curbSpots(w, name, { strip = false, lot = 'vijverhof' } = {}) {
   const p = w.streetPath(name).map(([x, z]) => [x, z]);
   const out = [];
   if (p.length < 2) return out;
@@ -95,11 +96,11 @@ function curbSpots(w, name) {
         }
         let off;
         if (p0 !== null && p1 - p0 >= 1.2) off = (p0 + p1) / 2;
-        else if (edge >= 2.8) off = edge - 1.1;
-        else continue; // te smal om te parkeren
+        else if (!strip && edge >= 2.8) off = edge - 1.1;
+        else continue; // te smal om te parkeren (of geen parkeerstrook, als die verplicht is)
         const x = px - uz * off * side, z = pz + ux * off * side;
         if (w.insideBuilding(x, z)) continue;
-        out.push({ x, z, heading: Math.atan2(ux, uz), lot: 'vijverhof', parallel: true });
+        out.push({ x, z, heading: Math.atan2(ux, uz), lot, parallel: true });
       }
     }
     acc += L;
@@ -124,6 +125,20 @@ function freeParking(g, near, n = 6, r = 70) {
   for (const b of Object.values(cars.batches)) b.cars = b.cars.filter((c) => !kill.has(c));
   cars.cars = cars.cars.filter((c) => !kill.has(c));
   cars.refreshBatches(true);
+}
+
+// Geparkeerde auto's langs de stoep in de hele buurt. In de BGT zijn de parkeerplaatsen hier smalle stroken langs de
+// rijbaan; daar vindt de gewone zoektocht (een raster van vakken) niets in. Dit loopt voordat de auto's neergezet worden.
+export function addCurbParking(w) {
+  if (w.curbParking) return;
+  w.curbParking = true;
+  const names = [...new Set(w.segments.map((s) => s[0]).filter(Boolean))];
+  let n = 0;
+  for (const name of names) {
+    const spots = name === 'Vijverhofstraat' ? curbSpots(w, name) : curbSpots(w, name, { strip: true, lot: 'stoep' });
+    w.parkingSpots.push(...spots); n += spots.length;
+  }
+  return n;
 }
 
 // ------------------------------------------------------------ opzet
@@ -160,7 +175,7 @@ export function setupAgniese(m, g, add) {
   // parkeerplekken langs de stoep van de Vijverhofstraat (fileparkeren); de BGT heeft hier geen losse vakken
   {
     const spots = curbSpots(w, 'Vijverhofstraat');
-    w.parkingSpots.push(...spots);
+    if (!w.curbParking) w.parkingSpots.push(...spots); // anders staan ze er al (addCurbParking)
     m.vijverhofSpots = spots.length;
     // buurvrouw die een plek zoekt, op de stoep halverwege de vakken
     const mid = spots[Math.floor(spots.length / 2)];
@@ -169,6 +184,7 @@ export function setupAgniese(m, g, add) {
     if (at) add('parkeer', 'Buurvrouw met sleutels', w.resolve(at[0] + 2, at[1] + 2, 0.5), { shirt: 0xad1457, pants: 0x37474f, hair: 0xbdbdbd, female: true, hairStyle: 'bun', glasses: true, coat: 0x6d4c41 });
   }
   m.agnieseTrash = null;
+  try { setupAgniese2(m, g, add, S); } catch (e) { console.warn('extra missies', e); }
 }
 
 // ------------------------------------------------------------ lijst
@@ -188,12 +204,13 @@ export function agnieseItems(n) {
     { id: 'subway', npc: n.subway, title: 'Broodje beleggen', place: 'Subway, Teilingerstraat 83B', desc: 'Lunchrush bij de Subway. Beleg de broodjes in de volgorde van het bonnetje.' },
     { id: 'reef', npc: n.reefklant, title: 'De klopcode van Café Reef', place: 'Café Reef, Vijverhofstraat 26', desc: 'Het café is dichtgetimmerd, maar binnen zit nog iemand. Klop de geheime code na.' },
     { id: 'boules', npc: n.boules, title: 'Jeu de boules', place: 'Mooie Boules, Vijverhofstraat 45', desc: 'Gooi je ballen dichter bij het butje dan de tegenstander.' },
-  ].filter((it) => it.npc);
+  ].filter((it) => it.npc).concat(agnieseItems2(n));
 }
 
 export const AGNIESE_MISSION_OF = {
   rox: 'rox', nasmw: 'nachtopvang', agent: 'dealers', ahmw: 'frikandel', silvia: 'sambal', sevinc: 'kebab',
   parkeer: 'inparkeren', veger: 'rotzooi', waard: 'karaoke', boules: 'boules', subway: 'subway', reefklant: 'reef', kippie: 'kippie',
+  ...AGNIESE2_MISSION_OF,
 };
 
 // ------------------------------------------------------------ missies
@@ -676,3 +693,6 @@ export const agnieseHandlers = {
     }
   },
 };
+
+// de tien extra missies (agniese2.js)
+Object.assign(agnieseHandlers, agnieseHandlers2);
