@@ -26,7 +26,7 @@ Je begint voor ROX Digital Agency aan de Vijverhofstraat 47, in een beige ROX-sh
 | Plek | Adres |
 | --- | --- |
 | ROX Digital Agency (hoekpand, derde verdieping) | Vijverhofstraat 47 |
-| Dikke Mic (karaoke) | Vijverhofstraat 47 |
+| Dikke Mic (karaoke), in het lage pand rechts van 47 | Vijverhofstraat 47 |
 | Mooie Boules | Vijverhofstraat 45 |
 | NAS (Nico Adriaans Stichting, dag- en nachtopvang) | Vijverhofstraat 35-37 |
 | Subway | Teilingerstraat 83B |
@@ -37,7 +37,7 @@ Je begint voor ROX Digital Agency aan de Vijverhofstraat 47, in een beige ROX-sh
 
 Langs de Vijverhofstraat loopt de Hofbogen, het oude spoorviaduct van de Hofpleinlijn, op de hoogte van de eerste verdieping. In de plint zitten panden achter bogen, waaronder het dichtgetimmerde Café Reef. Het viaduct heeft licht beton met reliëfpanelen, een donkere kroonlijst met consoles, bovenleidingmasten en een dubbel spoor. Waar de Teilingerstraat en de andere straten eronderdoor lopen, staat een grote, vlakke boog op zware pijlers van natuursteen. De ligging komt uit de BGT; het uiterlijk is nagemaakt naar een Street View-beeld van de maker.
 
-De derde verdieping van het hoekpand van ROX is helemaal rondom van glas, met de branding van ROX erachter (de omtrek komt uit de 3D BAG, de verdiepingshoogte is geschat).
+Vijverhofstraat 47 is nagemaakt naar een Street View-beeld van de maker: een kantoorpand met een vliesgevel van glas en lichtgrijze borstweringspanelen in een raster van donkere stijlen, rondom, ook langs de Teilingerstraat. Op de derde verdieping zit ROX, met de branding achter het glas. Beneden een pui met donkere kozijnen op een lage bakstenen borstwering en de witte entree met de 47. Rechts ernaast het lage pand met een blauwe deur en de ingang van Dikke Mic onder een rode luifel, en voor de deur een terras met plantenbakken, picknicktafels en lichtsnoeren. De omtrek komt uit de 3D BAG; de verdiepingshoogtes zijn geschat.
 
 In de Vijverhofstraat en de Teilingerstraat liggen vuilniszakken, blikjes, pizzadozen, matrassen en omgevallen winkelwagentjes, en staat graffiti op de gevels. Zwervers en verslaafden sloffen rond, zitten op een stuk karton of liggen in een slaapzak, en roepen af en toe iets in het Rotterdams. Bij de vuilniszakken scharrelen ratten rond, die wegschieten als je te dichtbij komt. Dealers rijden rondjes op scooters, en een zwarte auto met getinte ramen rijdt stapvoets door de Vijverhofstraat.
 

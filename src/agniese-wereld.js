@@ -132,79 +132,119 @@ export function buildAgnieseWorld(g) {
   return out;
 }
 
-// ------------------------------------------------------------ ROX op de derde verdieping van het hoekpand
+// ------------------------------------------------------------ Vijverhofstraat 47: kantoorpand met vliesgevel, ROX op de derde verdieping
+// Nagemaakt naar een Street View-beeld van de maker (november 2022): een kantoorpand met een begane grond en vier
+// verdiepingen. Op elke verdieping een band lichtgrijze borstweringspanelen en daarboven een strook glas, in een
+// raster van donkere blauwgrijze stijlen. De gevel loopt rondom door, ook langs de Teilingerstraat. Beneden aan de
+// Vijverhofstraat een pui met donkere kozijnen op een lage bakstenen borstwering, rechts de witte entree met de 47.
+// Rechts ernaast een laag pand (één verdieping) met de ingang van Dikke Mic, en voor de deur een terras.
+// De omtrek van het hoge deel komt uit de dakvlakken van de 3D BAG; de gevel wordt per zijde op het 3D-model gemeten.
 function buildRoxSign(g) {
   const fac = g.facades;
   const f = fac.frames.rox || (() => { const p = g.world.meta.pois.find((q) => q.id === 'rox'); return p ? fac.frameFor(...p.pos) : null; })();
   if (!f) return null;
-  const grp = fac.group(f, 0.08);
-  // bord onder de derde verdieping (ongeveer 9 meter hoog), in een neutrale stijl zonder echt logo
-  const c = document.createElement('canvas'); c.width = 1024; c.height = 256;
-  const x = c.getContext('2d');
-  x.fillStyle = '#111418'; x.fillRect(0, 0, 1024, 256);
-  x.fillStyle = '#ffffff'; x.font = '900 170px "Baloo 2", sans-serif'; x.textBaseline = 'middle'; x.fillText('ROX', 40, 132);
-  x.font = '600 64px Inter, sans-serif'; x.fillStyle = '#d9dde3'; x.fillText('Digital Agency', 400, 132);
-  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-  const mat = new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.25, roughness: 0.4 });
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.05), mat);
-  sign.position.set(0, 9.25, 0.04);
-  grp.add(sign);
-  let glass = null;
-  try { glass = buildRoxGlass(g, f); } catch (e) { console.warn('rox-glas', e); }
-  return { frame: f, glass };
+  let pand = null;
+  try { pand = buildPand47(g, f); } catch (e) { console.warn('pand 47', e); }
+  try { buildTerras47(g, f); } catch (e) { console.warn('terras 47', e); }
+  return { frame: f, pand };
 }
 
-// De derde verdieping van het hoekpand Vijverhofstraat 47 / Teilingerstraat helemaal rondom van glas, met de
-// branding van ROX erachter. De omtrek is het hoge deel van het pand (dak op ongeveer 17 meter) uit de 3D BAG,
-// overgetrokken uit de dakvlakken; de verdiepingshoogte (begane grond 4 m, daarna 3,3 m) is een schatting.
 const ROX_OUTLINE = [[-7.1, -4.5], [3.3, 4.4], [6.1, 1.2], [7.3, 0.2], [9.2, -2.3], [10.4, -1.3], [11.1, -0.3], [14.9, -5.0], [18.2, -9.0], [16.5, -10.5],
   [25.5, -21.2], [29.0, -25.5], [31.0, -25.0], [32.0, -29.0], [33.2, -31.3], [36.5, -34.2], [24.2, -40.6], [22.0, -38.8]];
-function roxBrandTexture() {
-  const c = document.createElement('canvas'); c.width = 1536; c.height = 512;
-  const x = c.getContext('2d');
-  const draw = () => {
-  // kantoor erachter: donker blauw, lichtbalken aan het plafond
-  const bg = x.createLinearGradient(0, 0, 0, 512); bg.addColorStop(0, '#1b2440'); bg.addColorStop(0.6, '#0e1530'); bg.addColorStop(1, '#0a0f22');
-  x.fillStyle = bg; x.fillRect(0, 0, 1536, 512);
-  for (let i = 0; i < 6; i++) { x.fillStyle = 'rgba(235,245,255,0.85)'; x.fillRect(40 + i * 256, 26, 170, 10); }
-  // bureaus met schermen onderin
-  for (let i = 0; i < 9; i++) {
-    const dx = 30 + i * 170;
-    x.fillStyle = '#05070f'; x.fillRect(dx, 420, 140, 16); x.fillRect(dx + 10, 436, 8, 60); x.fillRect(dx + 122, 436, 8, 60);
-    x.fillStyle = i % 3 ? '#3d8bff' : '#7ad1ff'; x.fillRect(dx + 30, 362, 74, 50);
-    x.fillStyle = '#05070f'; x.fillRect(dx + 62, 412, 10, 10);
-  }
-  // groot ROX met een blauwe gloed, en de payoff
-  x.textBaseline = 'middle';
-  x.font = '900 250px "Baloo 2", "Arial Black", sans-serif';
-  x.shadowColor = '#2f7bff'; x.shadowBlur = 40; x.fillStyle = '#ffffff'; x.fillText('ROX', 70, 215);
-  x.shadowBlur = 0;
-  x.font = '700 70px Inter, "Helvetica Neue", Arial, sans-serif'; x.fillStyle = '#8fc4ff'; x.fillText('DIGITAL AGENCY', 660, 170);
-  x.font = '600 46px Inter, "Helvetica Neue", Arial, sans-serif'; x.fillStyle = '#d7e6ff'; x.fillText('websites · apps · platforms', 664, 250);
-  // blauwe band als accent
-  x.fillStyle = '#2f6bff'; x.fillRect(660, 300, 760, 12);
-  };
-  draw();
-  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.anisotropy = 4;
-  if (document.fonts?.ready) document.fonts.ready.then(() => { draw(); tex.needsUpdate = true; });
+// voorgevel van het lage pand rechts (met Dikke Mic), uit de BAG-omtrek
+const ANNEX_FRONT = [[4.1, 3.8], [19.5, 16.1]];
+// waar Dikke Mic in de gevel van het lage pand zit (meters vanaf het begin); zie SHOPS.dikkemic in shops.js
+const SHOPS_DM_SPAN = [3.8, 8.0];
+const canvasTex = (w, h, draw, repeat = true) => {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); draw(x, w, h);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  if (repeat) tex.wrapS = THREE.RepeatWrapping;
+  if (document.fonts?.ready) document.fonts.ready.then(() => { x.clearRect(0, 0, w, h); draw(x, w, h); tex.needsUpdate = true; });
   return tex;
+};
+// ROX achter het glas: kantoor met lichtbalken, bureaus en groot ROX (6 m breed, 2 m hoog per herhaling)
+function roxBrandTexture() {
+  return canvasTex(1536, 512, (x) => {
+    const bg = x.createLinearGradient(0, 0, 0, 512); bg.addColorStop(0, '#1b2440'); bg.addColorStop(0.6, '#0e1530'); bg.addColorStop(1, '#0a0f22');
+    x.fillStyle = bg; x.fillRect(0, 0, 1536, 512);
+    for (let i = 0; i < 6; i++) { x.fillStyle = 'rgba(235,245,255,0.85)'; x.fillRect(40 + i * 256, 26, 170, 10); }
+    for (let i = 0; i < 9; i++) {
+      const dx = 30 + i * 170;
+      x.fillStyle = '#05070f'; x.fillRect(dx, 420, 140, 16); x.fillRect(dx + 10, 436, 8, 60); x.fillRect(dx + 122, 436, 8, 60);
+      x.fillStyle = i % 3 ? '#3d8bff' : '#7ad1ff'; x.fillRect(dx + 30, 362, 74, 50);
+      x.fillStyle = '#05070f'; x.fillRect(dx + 62, 412, 10, 10);
+    }
+    x.textBaseline = 'middle';
+    x.font = '900 250px "Baloo 2", "Arial Black", sans-serif';
+    x.shadowColor = '#2f7bff'; x.shadowBlur = 40; x.fillStyle = '#ffffff'; x.fillText('ROX', 70, 215);
+    x.shadowBlur = 0;
+    x.font = '700 70px Inter, "Helvetica Neue", Arial, sans-serif'; x.fillStyle = '#8fc4ff'; x.fillText('DIGITAL AGENCY', 660, 170);
+    x.font = '600 46px Inter, "Helvetica Neue", Arial, sans-serif'; x.fillStyle = '#d7e6ff'; x.fillText('websites · apps · platforms', 664, 250);
+    x.fillStyle = '#2f6bff'; x.fillRect(660, 300, 760, 12);
+  });
 }
-function buildRoxGlass(g, f) {
+// gewone kantoren achter het glas: lamellen half dicht, plafondlicht, bureaus en een plant (6 m x 2 m)
+function officeTexture() {
+  return canvasTex(1536, 512, (x) => {
+    let s = 7; const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    const bg = x.createLinearGradient(0, 0, 0, 512); bg.addColorStop(0, '#5d666b'); bg.addColorStop(0.5, '#3c4448'); bg.addColorStop(1, '#2a3033');
+    x.fillStyle = bg; x.fillRect(0, 0, 1536, 512);
+    for (let i = 0; i < 7; i++) { x.fillStyle = 'rgba(240,244,236,0.75)'; x.fillRect(30 + i * 220, 18, 150, 9); }
+    // bureaus, schermen, stoelen, planten
+    for (let i = 0; i < 10; i++) {
+      const dx = 20 + i * 152 + r() * 30;
+      x.fillStyle = '#2b2b2b'; x.fillRect(dx, 400, 120, 12); x.fillRect(dx + 8, 412, 6, 100); x.fillRect(dx + 106, 412, 6, 100);
+      if (r() < 0.7) { x.fillStyle = '#1a1d20'; x.fillRect(dx + 30, 345, 60, 50); x.fillStyle = 'rgba(150,190,230,0.5)'; x.fillRect(dx + 34, 349, 52, 40); }
+      if (r() < 0.25) { x.fillStyle = '#3f6b3a'; x.beginPath(); x.arc(dx + 130, 370, 30, 0, 7); x.fill(); x.fillStyle = '#7a5a40'; x.fillRect(dx + 116, 395, 28, 40); }
+    }
+    // verticale lamellen, per vak verschillend ver dicht (zoals op de foto)
+    for (let v = 0; v < 1536; v += 192) {
+      const down = r();
+      if (down < 0.25) continue;
+      const hgt = 512 * Math.min(1, 0.35 + down);
+      for (let k = 0; k < 192; k += 14) { x.fillStyle = k % 28 ? 'rgba(215,218,214,0.92)' : 'rgba(190,194,190,0.92)'; x.fillRect(v + k, 0, 11, hgt); }
+    }
+    // weerspiegeling van de lucht
+    const rf = x.createLinearGradient(0, 0, 1536, 512); rf.addColorStop(0, 'rgba(200,225,245,0.25)'); rf.addColorStop(0.5, 'rgba(200,225,245,0.05)'); rf.addColorStop(1, 'rgba(200,225,245,0.2)');
+    x.fillStyle = rf; x.fillRect(0, 0, 1536, 512);
+  });
+}
+// borstweringspanelen: lichtgrijs, twee rijen, met wat vuile strepen (1,35 m breed per herhaling)
+function spandrelTexture() {
+  return canvasTex(256, 256, (x) => {
+    x.fillStyle = '#dde0e1'; x.fillRect(0, 0, 256, 256);
+    x.fillStyle = '#b4babd'; x.fillRect(0, 124, 256, 6);
+    for (let i = 0; i < 6; i++) { x.fillStyle = `rgba(110,115,110,${0.05 + i * 0.012})`; x.fillRect(20 + i * 40, 130, 6 + (i % 3) * 3, 126); }
+    const gr = x.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, 'rgba(255,255,255,0.15)'); gr.addColorStop(1, 'rgba(0,0,0,0.08)');
+    x.fillStyle = gr; x.fillRect(0, 0, 256, 256);
+  });
+}
+// pui beneden: donker interieur met een melkglasstrook (4 m x 2,45 m)
+function puiTexture() {
+  return canvasTex(1024, 640, (x) => {
+    const bg = x.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#4a5357'); bg.addColorStop(1, '#22282b');
+    x.fillStyle = bg; x.fillRect(0, 0, 1024, 640);
+    for (let i = 0; i < 4; i++) { x.fillStyle = 'rgba(240,240,230,0.8)'; x.fillRect(60 + i * 250, 20, 160, 10); }
+    for (let i = 0; i < 6; i++) { const dx = 30 + i * 170; x.fillStyle = '#1d1f21'; x.fillRect(dx, 470, 130, 14); x.fillRect(dx + 10, 484, 8, 156); x.fillStyle = '#121416'; x.fillRect(dx + 40, 420, 50, 45); }
+    x.fillStyle = 'rgba(235,240,240,0.75)'; x.fillRect(0, 300, 1024, 110); // melkglas
+    x.fillStyle = 'rgba(160,170,170,0.6)'; x.fillRect(0, 300, 1024, 4); x.fillRect(0, 406, 1024, 4);
+    const rf = x.createLinearGradient(0, 0, 1024, 640); rf.addColorStop(0, 'rgba(210,230,245,0.25)'); rf.addColorStop(1, 'rgba(210,230,245,0.05)');
+    x.fillStyle = rf; x.fillRect(0, 0, 1024, 640);
+  });
+}
+
+function buildPand47(g, f) {
   const w = g.world;
-  const base = f.y; // maaiveld bij de voorgevel
-  const Y0 = base + 10.3, Y1 = base + 13.7, H = Y1 - Y0;
-  const tex = roxBrandTexture();
-  const TILE = 9; // meter per herhaling van de branding
+  const base = f.y;
   const ring = ROX_OUTLINE;
-  // buitenom: de ring met de klok mee of tegen de klok in?
   let area = 0; for (let i = 0; i < ring.length; i++) { const [x1, z1] = ring[i], [x2, z2] = ring[(i + 1) % ring.length]; area += x1 * z2 - x2 * z1; }
   const sgn = area > 0 ? -1 : 1; // zo wijst de normaal naar buiten
-  const parts = { brand: [], glass: [], alu: [] };
-  // de muurdriehoeken van het pand in de buurt (om de gevel precies te vinden)
+  // de driehoeken van het pand en het lage pand ernaast (om gevel en dak precies te vinden)
   const tris = [];
   {
     const { f32, n } = w.bld;
-    const xs = ring.map((q) => q[0]), zs = ring.map((q) => q[1]);
+    const xs = ring.map((q) => q[0]).concat(ANNEX_FRONT.map((q) => q[0])), zs = ring.map((q) => q[1]).concat(ANNEX_FRONT.map((q) => q[1]));
     const x0 = Math.min(...xs) - 3, x1 = Math.max(...xs) + 3, z0 = Math.min(...zs) - 3, z1 = Math.max(...zs) + 3;
     for (let v = 0; v < n; v += 3) {
       let ok = true;
@@ -212,70 +252,205 @@ function buildRoxGlass(g, f) {
       if (ok) tris.push([0, 1, 2].map((k) => [f32[(v + k) * 7], f32[(v + k) * 7 + 1], f32[(v + k) * 7 + 2]]));
     }
   }
-  // Möller-Trumbore, alleen horizontaal: afstand tot de dichtstbijzijnde muur langs (dx, 0, dz)
-  const wallHit = (ox, oy, oz, dx, dz) => {
+  // Möller-Trumbore: afstand langs een straal (dx, dy, dz)
+  const rayHit = (ox, oy, oz, dx, dy, dz) => {
     let best = null;
     for (const [a, b, c] of tris) {
       const e1x = b[0] - a[0], e1y = b[1] - a[1], e1z = b[2] - a[2], e2x = c[0] - a[0], e2y = c[1] - a[1], e2z = c[2] - a[2];
-      const px = -dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y; // d x e2 met d = (dx, 0, dz)
+      const px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x;
       const det = e1x * px + e1y * py + e1z * pz;
       if (Math.abs(det) < 1e-9) continue;
       const inv = 1 / det, tx = ox - a[0], ty = oy - a[1], tz = oz - a[2];
       const u = (tx * px + ty * py + tz * pz) * inv; if (u < 0 || u > 1) continue;
       const qx = ty * e1z - tz * e1y, qy = tz * e1x - tx * e1z, qz = tx * e1y - ty * e1x;
-      const vv = (dx * qx + dz * qz) * inv; if (vv < 0 || u + vv > 1) continue;
+      const vv = (dx * qx + dy * qy + dz * qz) * inv; if (vv < 0 || u + vv > 1) continue;
       const t = (e2x * qx + e2y * qy + e2z * qz) * inv;
       if (t > 0 && (best == null || t < best)) best = t;
     }
     return best;
   };
-  let along = 0;
+  const roofAt = (x, z, fallback) => { const t = rayHit(x, base + 60, z, 0, -1, 0); return t == null ? fallback : base + 60 - t; };
+  const TOP = roofAt(-2, -3, base + 17.2);
+  const GF = 4.0; // begane grond
+  const FH = (TOP - base - GF) / 4; // vier verdiepingen
+  const SP = Math.min(1.25, FH * 0.38); // borstwering per verdieping
+  const mats = {
+    spandrel: new THREE.MeshStandardMaterial({ map: spandrelTexture(), roughness: 0.55, metalness: 0.1 }),
+    office: new THREE.MeshStandardMaterial({ map: officeTexture(), roughness: 0.15, metalness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.06 }),
+    rox: new THREE.MeshStandardMaterial({ map: roxBrandTexture(), roughness: 0.15, metalness: 0.2, emissive: 0xffffff, emissiveIntensity: 0.5 }),
+    mullion: new THREE.MeshStandardMaterial({ color: 0x34474f, roughness: 0.45, metalness: 0.5 }),
+    pui: new THREE.MeshStandardMaterial({ map: puiTexture(), roughness: 0.15, metalness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.05 }),
+    frame: new THREE.MeshStandardMaterial({ color: 0x23292c, roughness: 0.5, metalness: 0.4 }),
+    white: new THREE.MeshStandardMaterial({ color: 0xf1f1ee, roughness: 0.6 }),
+    brick: new THREE.MeshStandardMaterial({ color: 0x6f4636, roughness: 0.95 }),
+    door: new THREE.MeshStandardMaterial({ color: 0x9fb1ba, roughness: 0.1, metalness: 0.4, transparent: true, opacity: 0.7 }),
+    blue: new THREE.MeshStandardMaterial({ color: 0x1f4a7a, roughness: 0.5 }),
+  };
+  const parts = Object.fromEntries(Object.keys(mats).map((k) => [k, []]));
+  // vlak met uv's in meters / tile (x langs de gevel vanaf 'along', y over de hoogte)
+  const plane = (L, H, tile, along) => { const p = new THREE.PlaneGeometry(L, H); const uv = p.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setX(k, (along + uv.getX(k) * L) / tile); return p; };
+  // één gevelzijde bekleden. o = { a, b, nx, nz, dW, y0, floors, top, startExt, endExt, along, roxFloor }
+  const clad = (ax, az, bx, bz, nx, nz, dW, ext0, ext1, along, y0, nFloors, top) => {
+    const L0 = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / L0, uz = (bz - az) / L0;
+    const L = L0 + ext0 + ext1;
+    const cx = (ax + bx) / 2 + ux * (ext1 - ext0) / 2, cz = (az + bz) / 2 + uz * (ext1 - ext0) / 2;
+    const yaw = Math.atan2(nx, nz);
+    const put = (geo, off, k) => { geo.rotateY(yaw); geo.translate(cx + nx * (dW + off), 0, cz + nz * (dW + off)); parts[k].push(geo); };
+    const fh = (top - y0) / nFloors, sp = Math.min(SP, fh * 0.38);
+    for (let fl = 0; fl < nFloors; fl++) {
+      const yb = y0 + fl * fh;
+      const s = plane(L, sp, 1.35, along - ext0); s.translate(0, yb + sp / 2, 0); put(s, 0.06, 'spandrel');
+      const isRox = nFloors === 4 && fl === 2; // derde verdieping
+      const wnd = plane(L, fh - sp, 6, along - ext0 + fl * 1.9); wnd.translate(0, yb + sp + (fh - sp) / 2, 0); put(wnd, 0.04, isRox ? 'rox' : 'office');
+      for (const y of [yb, yb + sp]) { const t = new THREE.BoxGeometry(L, 0.08, 0.13); t.translate(0, y, 0); put(t, 0.09, 'mullion'); }
+    }
+    // stijlen om de 1,35 m, en de dakrand
+    const nM = Math.max(1, Math.round(L0 / 1.35));
+    for (let k = 0; k <= nM; k++) { const st = new THREE.BoxGeometry(0.07, top - y0, 0.13); st.translate(-L / 2 + ext0 + (k * L0) / nM, (y0 + top) / 2, 0); put(st, 0.09, 'mullion'); }
+    const cop = new THREE.BoxGeometry(L, 0.42, 0.3); cop.translate(0, top - 0.21, 0); put(cop, 0.12, 'mullion');
+    return { L0, ux, uz, cx, cz, yaw, put, L };
+  };
+  // per zijde: echte muur meten, en de hoeken in verstek laten aansluiten
+  const edges = [];
   for (let i = 0; i < ring.length; i++) {
     const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length];
-    const L = Math.hypot(bx - ax, bz - az); if (L < 0.4) continue;
-    const ux = (bx - ax) / L, uz = (bz - az) / L;
-    // normaal naar buiten
-    const nx = -uz * sgn, nz = ux * sgn;
-    const yaw = Math.atan2(nx, nz);
-    const mx = (ax + bx) / 2, mz = (az + bz) / 2;
-    const ext = 0.45; // aan de uiteinden een stukje doorlopen, zodat de hoeken dicht zijn
-    // waar staat de muur echt? (de omtrek is overgetrokken en kan een paar decimeter binnen de gevel liggen)
-    // gemeten met een horizontale straal op het 3D-model, op de hoogte van de verdieping
-    let dW = -Infinity;
-    for (const t of [0.15, 0.35, 0.5, 0.65, 0.85]) {
-      const sx = ax + (bx - ax) * t, sz = az + (bz - az) * t;
-      const hit = wallHit(sx + nx * 3, Y0 + 1.6, sz + nz * 3, -nx, -nz);
-      if (hit != null && hit > 1 && hit < 5) dW = Math.max(dW, 3 - hit);
-    }
-    if (!isFinite(dW)) dW = 0;
-    const place = (geo, off) => { geo.rotateY(yaw); geo.translate(mx + nx * (off + dW), 0, mz + nz * (off + dW)); return geo; };
-    // branding vlak voor de muur
-    const pb = new THREE.PlaneGeometry(L + ext * 2, H - 0.5);
-    const uv = pb.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setX(k, (along - ext + uv.getX(k) * (L + ext * 2)) / TILE);
-    pb.translate(0, Y0 + 0.25 + (H - 0.5) / 2, 0); parts.brand.push(place(pb, 0.08));
-    // glas
-    const gl = new THREE.PlaneGeometry(L + ext * 2, H - 0.5); gl.translate(0, Y0 + 0.25 + (H - 0.5) / 2, 0); parts.glass.push(place(gl, 0.42));
-    // vloer- en plafondrand en stijlen van aluminium
-    for (const y of [Y0 + 0.13, Y1 - 0.13]) { const b = new THREE.BoxGeometry(L + ext * 2, 0.26, 0.55); b.translate(0, y, 0); parts.alu.push(place(b, 0.27)); }
-    for (let d = 0; d <= L + 0.01; d += L / Math.max(1, Math.round(L / 1.6))) {
-      const st = new THREE.BoxGeometry(0.07, H - 0.5, 0.12); st.translate(d - L / 2, Y0 + 0.25 + (H - 0.5) / 2, 0); parts.alu.push(place(st, 0.42));
-    }
-    along += L;
+    const L = Math.hypot(bx - ax, bz - az);
+    const ux = (bx - ax) / L, uz = (bz - az) / L, nx = -uz * sgn, nz = ux * sgn;
+    const meas = (y) => { let d = -Infinity; for (const t of [0.2, 0.5, 0.8]) { const sx = ax + (bx - ax) * t, sz = az + (bz - az) * t; const h = rayHit(sx + nx * 3, y, sz + nz * 3, -nx, 0, -nz); if (h != null && h > 1 && h < 5) d = Math.max(d, 3 - h); } return isFinite(d) ? d : 0; };
+    edges.push({ ax, az, bx, bz, L, ux, uz, nx, nz, dW: meas(base + GF + FH * 2.5), dG: meas(base + 2) });
   }
-  const mats = {
-    brand: new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.6 }),
-    glass: new THREE.MeshStandardMaterial({ color: 0x9cc4dc, transparent: true, opacity: 0.3, roughness: 0.05, metalness: 0.4, depthWrite: false, side: THREE.DoubleSide }),
-    alu: new THREE.MeshStandardMaterial({ color: 0x2b3036, roughness: 0.45, metalness: 0.6 }),
+  // verlenging aan een hoek zodat twee verschoven vlakken precies op elkaar aansluiten
+  const extAt = (e1, e2) => { const c = e1.ux * e2.uz - e1.uz * e2.ux, d = e1.ux * e2.ux + e1.uz * e2.uz; const th = Math.atan2(c, d) * sgn * -1; return Math.max(-1, Math.min(1, Math.tan(th / 2))); };
+  let along = 0;
+  edges.forEach((e, i) => {
+    if (e.L < 0.3) return;
+    const prev = edges[(i + edges.length - 1) % edges.length], next = edges[(i + 1) % edges.length];
+    const o = e.dW + 0.1;
+    clad(e.ax, e.az, e.bx, e.bz, e.nx, e.nz, e.dW, extAt(prev, e) * o, extAt(e, next) * o, along, base + GF, 4, TOP);
+    along += e.L;
+  });
+  // ---- begane grond aan de Vijverhofstraat (zijde 0) en de Teilingerstraat (laatste zijde)
+  // segs: stukken pui in meters vanaf het begin van de zijde; entrance: de entree van 47; blue: een blauwe deur
+  const ground = (e, { segs, entrance = false, blue = null, band = true }) => {
+    const yaw = Math.atan2(e.nx, e.nz), L = e.L, cx = (e.ax + e.bx) / 2, cz = (e.az + e.bz) / 2;
+    const put = (geo, off, k) => { geo.rotateY(yaw); geo.translate(cx + e.nx * (e.dG + off), base, cz + e.nz * (e.dG + off)); parts[k].push(geo); };
+    const SILL = 0.55, PTOP = 3.0;
+    // donkere band tussen pui en eerste borstwering
+    if (band) { const b = new THREE.BoxGeometry(L, GF - PTOP, 0.12); b.translate(0, (PTOP + GF) / 2, 0); put(b, 0.06, 'frame'); }
+    if (blue) {
+      const [b0, b1] = blue, bw = b1 - b0, bc = -L / 2 + (b0 + b1) / 2;
+      const d = new THREE.BoxGeometry(bw, 2.5, 0.08); d.translate(bc, 1.25, 0); put(d, 0.05, 'blue');
+      const fr = new THREE.BoxGeometry(bw + 0.16, 0.1, 0.12); fr.translate(bc, 2.55, 0); put(fr, 0.06, 'frame');
+      const pier = new THREE.BoxGeometry(0.45, GF, 0.3); pier.translate(-L / 2 + b1 + 0.25, GF / 2, 0); put(pier, 0.12, 'brick');
+      const tb = new THREE.BoxGeometry(bw + 0.2, GF - 2.6, 0.1); tb.translate(bc, (GF + 2.6) / 2, 0); put(tb, 0.05, 'frame');
+    }
+    for (const [a0, a1] of segs) {
+      const s0 = -L / 2 + a0, s1 = -L / 2 + a1;
+      const pw = s1 - s0; if (pw < 0.5) continue;
+      if (!band) { const b = new THREE.BoxGeometry(pw, GF - PTOP, 0.12); b.translate((s0 + s1) / 2, (PTOP + GF) / 2, 0); put(b, 0.06, 'frame'); }
+      const pg = plane(pw, PTOP - SILL, 4, s0 + L / 2); pg.translate((s0 + s1) / 2, (SILL + PTOP) / 2, 0); put(pg, 0.03, 'pui');
+      const br = new THREE.BoxGeometry(pw, SILL, 0.3); br.translate((s0 + s1) / 2, SILL / 2, 0); put(br, 0.15, 'brick');
+      for (const y of [SILL, PTOP]) { const t = new THREE.BoxGeometry(pw, 0.09, 0.12); t.translate((s0 + s1) / 2, y, 0); put(t, 0.08, 'frame'); }
+      const n = Math.max(1, Math.round(pw / 1.8));
+      for (let k = 0; k <= n; k++) { const st = new THREE.BoxGeometry(0.09, PTOP - SILL, 0.12); st.translate(s0 + (k * pw) / n, (SILL + PTOP) / 2, 0); put(st, 0.08, 'frame'); }
+    }
+    if (!entrance) return;
+    // entree: witte kozijnen, dubbele glazen deur, '47' erboven; rechts de witte kolom
+    const dx = -L / 2 + L * 0.785, DW = 1.9;
+    for (const sx of [-1, 1]) { const p = new THREE.BoxGeometry(0.14, PTOP, 0.2); p.translate(dx + sx * (DW / 2 + 0.07), PTOP / 2, 0); put(p, 0.1, 'white'); }
+    const lint = new THREE.BoxGeometry(DW + 0.28, 0.14, 0.2); lint.translate(dx, PTOP, 0); put(lint, 0.1, 'white');
+    const mid = new THREE.BoxGeometry(DW + 0.28, 0.1, 0.18); mid.translate(dx, 2.35, 0); put(mid, 0.1, 'white');
+    for (const sx of [-0.5, 0.5]) {
+      const d = new THREE.PlaneGeometry(DW / 2 - 0.06, 2.3); d.translate(dx + sx * (DW / 2), 1.15, 0); put(d, 0.02, 'door');
+      const fr = new THREE.BoxGeometry(0.06, 2.3, 0.08); fr.translate(dx + sx * 0.06, 1.15, 0); put(fr, 0.06, 'white');
+      const grip = new THREE.BoxGeometry(0.03, 0.5, 0.05); grip.translate(dx + sx * 0.2, 1.1, 0); put(grip, 0.1, 'frame');
+    }
+    const num = canvasTex(256, 192, (x) => { x.fillStyle = '#1d2a33'; x.fillRect(0, 0, 256, 192); x.fillStyle = '#ffffff'; x.font = '800 130px Inter, "Helvetica Neue", Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('47', 128, 100); }, false);
+    const nm = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.46), new THREE.MeshStandardMaterial({ map: num, roughness: 0.3 }));
+    nm.rotation.y = yaw; nm.position.set(cx + e.nx * (e.dG + 0.06) + (dx - 0.4) * (e.nz), base + 2.68, cz + e.nz * (e.dG + 0.06) + (dx - 0.4) * (-e.nx));
+    g.scene.add(nm);
+    const col = new THREE.BoxGeometry(0.55, GF, 0.45); col.translate(L / 2 - 0.3, GF / 2, 0); put(col, 0.2, 'white');
   };
+  ground(edges[0], { segs: [[0, edges[0].L * 0.7], [edges[0].L * 0.865, edges[0].L - 0.65]], entrance: true });
+  ground(edges[edges.length - 1], { segs: [[0, edges[edges.length - 1].L]] });
+  // ---- het lage pand rechts: één verdieping met een glazen band, alleen de voorkant aan de Vijverhofstraat
+  {
+    const [[ax, az], [bx, bz]] = ANNEX_FRONT;
+    const L = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / L, uz = (bz - az) / L;
+    let nx = -uz, nz = ux; if (nx * edges[0].nx + nz * edges[0].nz < 0) { nx = -nx; nz = -nz; }
+    const mx = ax + ux * L * 0.5 + nx * 3, mz = az + uz * L * 0.5 + nz * 3;
+    const h = rayHit(mx, base + GF + 1.5, mz, -nx, 0, -nz);
+    const dW = h != null && h > 1 && h < 5 ? 3 - h : 0;
+    const atop = roofAt(ax + ux * L * 0.5 - nx * 3, az + uz * L * 0.5 - nz * 3, base + 7.4);
+    if (atop > base + GF + 1.5 && atop < base + GF + 5) clad(ax, az, bx, bz, nx, nz, dW, 0, 0, 0, base + GF, 1, atop);
+    // begane grond: blauwe deur en een bakstenen penant links, dan Dikke Mic (eigen gevel), rechts donkere puien
+    const hG = rayHit(mx, base + 1.5, mz, -nx, 0, -nz);
+    const dG = hG != null && hG > 1 && hG < 5 ? 3 - hG : 0;
+    const dm = SHOPS_DM_SPAN;
+    ground({ ax, az, bx, bz, L, nx, nz, dG }, { segs: [[1.8, dm[0] - 0.2], [dm[1] + 0.3, L - 0.2]], blue: [0.1, 1.2], band: false });
+  }
   const grp = new THREE.Group();
   for (const [k, geos] of Object.entries(parts)) {
-    const norm = geos.map((x) => (x.index ? x.toNonIndexed() : x));
-    if (k !== 'brand') for (const y of norm) y.deleteAttribute('uv');
+    if (!geos.length) continue;
+    const textured = ['spandrel', 'office', 'rox', 'pui'].includes(k);
+    const norm = geos.map((x) => { const y = x.index ? x.toNonIndexed() : x; if (!textured && y.attributes.uv) y.deleteAttribute('uv'); if (textured && !y.attributes.uv) return null; return y; }).filter(Boolean);
     const m = new THREE.Mesh(mergeGeometries(norm, false), mats[k]);
-    m.castShadow = k === 'alu'; m.receiveShadow = k !== 'glass';
-    if (k === 'glass') m.renderOrder = 2;
+    m.castShadow = !['office', 'rox', 'pui', 'door'].includes(k); m.receiveShadow = true;
     grp.add(m);
   }
+  g.scene.add(grp);
+  return grp;
+}
+
+// terras voor de deur: houten plantenbakken met hoog gras, groene picknicktafels en lichtsnoeren aan zwarte paaltjes
+function buildTerras47(g, f) {
+  const w = g.world;
+  const e0 = ROX_OUTLINE[0], e1 = ROX_OUTLINE[1];
+  const L = Math.hypot(e1[0] - e0[0], e1[1] - e0[1]);
+  const ux = (e1[0] - e0[0]) / L, uz = (e1[1] - e0[1]) / L;
+  const nx = f.nx, nz = f.nz;
+  const at = (s, d) => [e0[0] + ux * s + nx * d, e0[1] + uz * s + nz * d];
+  const yaw = Math.atan2(nx, nz);
+  const wood = std(0x8a6a48, { roughness: 0.9 }), green = std(0x2f5d3a, { roughness: 0.7 }), grass = std(0x8f9a4a, { roughness: 0.9 }), black = std(0x1b1b1b, { metalness: 0.4 });
+  const grp = new THREE.Group();
+  const free = (x, z) => !w.insideBuilding(x, z) && w.classAt(x, z) !== 'rijbaan';
+  // terras rechts van de entree, voor het lage pand met Dikke Mic
+  const s0 = L * 0.9, s1 = L + 7.5;
+  let dFront = 5.0; while (dFront > 3.4 && ![s0, (s0 + s1) / 2, s1].every((s) => free(...at(s, dFront)))) dFront -= 0.3;
+  const poles = [];
+  for (let s = s0; s <= s1 - 1.7; s += 2.3) {
+    const [x, z] = at(s + 0.9, dFront);
+    const bak = new THREE.Group();
+    const box = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.55, 0.6), wood); box.position.y = 0.28; bak.add(box);
+    for (let k = 0; k < 14; k++) { const bl = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.7 + Math.random() * 0.5, 4), grass); bl.position.set(-0.8 + Math.random() * 1.6, 0.85 + Math.random() * 0.1, (Math.random() - 0.5) * 0.4); bl.rotation.z = (Math.random() - 0.5) * 0.5; bak.add(bl); }
+    bak.position.set(x, w.groundAt(x, z), z); bak.rotation.y = yaw;
+    grp.add(bak);
+    w.addObstacle([[x + ux * 0.95 + nx * 0.3, z + uz * 0.95 + nz * 0.3], [x - ux * 0.95 + nx * 0.3, z - uz * 0.95 + nz * 0.3], [x - ux * 0.95 - nx * 0.3, z - uz * 0.95 - nz * 0.3], [x + ux * 0.95 - nx * 0.3, z + uz * 0.95 - nz * 0.3]]);
+    poles.push(at(s - 0.1, dFront + 0.15));
+  }
+  poles.push(at(s1 - 0.6, dFront + 0.15));
+  // picknicktafels tussen de bakken en de gevel
+  for (const s of [s0 + 0.8, s0 + 3.6]) {
+    const [x, z] = at(s, dFront - 1.6);
+    if (!free(x, z)) continue;
+    const t = new THREE.Group();
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.06, 0.75), green); top.position.y = 0.74; t.add(top);
+    for (const sz of [-0.62, 0.62]) { const b = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.05, 0.28), green); b.position.set(0, 0.45, sz); t.add(b); }
+    for (const sx of [-0.7, 0.7]) for (const k of [-1, 1]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.95, 0.07), green); leg.position.set(sx, 0.4, k * 0.35); leg.rotation.x = k * 0.55; t.add(leg); }
+    t.position.set(x, w.groundAt(x, z), z); t.rotation.y = yaw;
+    grp.add(t);
+    w.addObstacle([[x + ux * 0.95 + nx * 0.8, z + uz * 0.95 + nz * 0.8], [x - ux * 0.95 + nx * 0.8, z - uz * 0.95 + nz * 0.8], [x - ux * 0.95 - nx * 0.8, z - uz * 0.95 - nz * 0.8], [x + ux * 0.95 - nx * 0.8, z + uz * 0.95 - nz * 0.8]]);
+  }
+  // paaltjes met een lichtsnoer ertussen
+  const bulb = new THREE.MeshStandardMaterial({ color: 0xfff2c6, emissive: 0xffd27a, emissiveIntensity: 0.9 });
+  const tops = poles.map(([x, z]) => { const y = w.groundAt(x, z); const p = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 2.4, 6), black); p.position.set(x, y + 1.2, z); grp.add(p); return new THREE.Vector3(x, y + 2.35, z); });
+  for (let i = 1; i < tops.length; i++) {
+    const a = tops[i - 1], b = tops[i];
+    const pts = []; for (let k = 0; k <= 10; k++) { const t = k / 10; const p = a.clone().lerp(b, t); p.y -= Math.sin(t * Math.PI) * 0.35; pts.push(p); }
+    grp.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.008, 4), black));
+    for (let k = 1; k < 10; k += 2) { const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 5), bulb); b2.position.copy(pts[k]).y -= 0.05; grp.add(b2); }
+  }
+  grp.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   g.scene.add(grp);
   return grp;
 }

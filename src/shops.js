@@ -9,7 +9,9 @@ const mesh = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, 
 
 // id -> bord en etalage (Agniesebuurt: Vijverhofstraat, Teilingerstraat en Eudokiaplein)
 export const SHOPS = {
-  dikkemic: { sign: 'Dikke Mic', sub: 'karaoke · games · food', bg: '#1a0b2e', fg: '#ff4fd8', type: 'cafe', street: 'Vijverhofstraat' },
+  // in het lage pand rechts naast nummer 47 (volgens het Street View-beeld van de maker), met een rode luifel
+  dikkemic: { sign: 'Dikke Mic', sub: 'karaoke · games · food', bg: '#1a0b2e', fg: '#ff4fd8', type: 'cafe', street: 'Vijverhofstraat',
+    awning: ['#c62828', '#a51d1d'], maxW: 4.2, edge: { a: [4.1, 3.8], b: [19.5, 16.1], at: 5.9 } },
   mooieboules: { sign: 'Mooie Boules', sub: 'jeu de boules · foodhal', bg: '#f3ead6', fg: '#1f3b2d', type: 'cafe', street: 'Vijverhofstraat', terrace: 2 },
   nas: { sign: 'NAS', sub: 'dag- en nachtopvang', bg: '#e8e2d6', fg: '#3b3b3b', type: 'kantoor', street: 'Vijverhofstraat' },
   subway: { sign: 'Subway', sub: 'sandwiches', bg: '#00843d', fg: '#ffc20e', type: 'lunchroom', street: 'Teilingerstraat' },
@@ -25,13 +27,13 @@ export function buildShops(fac, pois) {
   const ids = Object.keys(SHOPS).filter((id) => pois[id]);
   const frames = {};
   for (const id of ids) {
-    const f = fac.frameAtAddress(...pois[id].pos, SHOPS[id].street);
+    const f = SHOPS[id].edge ? edgeFrame(fac, SHOPS[id].edge, pois[id].pos) : fac.frameAtAddress(...pois[id].pos, SHOPS[id].street);
     if (f) frames[id] = fac.frames[id] = f;
   }
   // winkels naast elkaar in één pand: bordbreedte beperken tot de ruimte tot de buren
   for (const id of Object.keys(frames)) {
     const f = frames[id];
-    let room = Math.min(6, f.len - 0.4);
+    let room = Math.min(SHOPS[id].maxW || 6, f.len - 0.4);
     for (const other of Object.keys(frames)) {
       if (other === id) continue;
       const o = frames[other];
@@ -50,6 +52,16 @@ export function buildShops(fac, pois) {
   if (pois.tankstation) buildTankstation(fac, pois.tankstation.pos);
   if (pois.joodsmonument) buildMonument(fac, pois.joodsmonument.pos);
   if (pois.busstation) buildBusstation(fac, pois.busstation.pos);
+}
+
+// een gevelplek op een vaste zijde (a -> b), 'at' meter vanaf a; de normaal wijst van het adrespunt af (naar de straat)
+function edgeFrame(fac, { a, b, at }, pos) {
+  const L = Math.hypot(b[0] - a[0], b[1] - a[1]), dx = (b[0] - a[0]) / L, dz = (b[1] - a[1]) / L;
+  const x = a[0] + dx * at, z = a[1] + dz * at;
+  let nx = -dz, nz = dx;
+  if (pos && (pos[0] - x) * nx + (pos[1] - z) * nz > 0) { nx = -nx; nz = -nz; }
+  const w = fac.world;
+  return { x, z, y: w.groundAt(x + nx * 1.5, z + nz * 1.5), ux: -nz, uz: nx, nx, nz, len: Math.min(at, L - at) * 2, yaw: Math.atan2(nx, nz) };
 }
 
 function shopFacade(fac, f, s) {

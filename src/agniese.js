@@ -139,7 +139,7 @@ export function setupAgniese(m, g, add) {
   };
   const S = (id, out, side) => spotFor(id, out, side);
   { const s = S('rox', 2.6, 3.2); if (s) add('rox', 'Developer van ROX', s, { shirt: 0x263238, pants: 0x1b1b1b, hair: 0x3e2723, glasses: true, beard: true, sleeves: 'long' }); }
-  { const s = S('dikkemic', 2.6, -1.2); if (s) add('waard', 'Gastheer van Dikke Mic', s, { shirt: 0x6a1b9a, pants: 0x111111, hair: 0x111111, apron: 0x111111 }); }
+  { const s = S('dikkemic', 2.2, -1.2); if (s) add('waard', 'Gastheer van Dikke Mic', s, { shirt: 0x6a1b9a, pants: 0x111111, hair: 0x111111, apron: 0x111111 }); }
   { const s = S('mooieboules', 2.6); if (s) add('boules', 'Gastvrouw van Mooie Boules', s, { shirt: 0x2e7d32, pants: 0x263238, hair: 0xd7b56d, female: true, hairStyle: 'bun', apron: 0xf5f0e6 }); }
   { const s = S('nas', 2.8); if (s) add('nasmw', 'Medewerker van de NAS', s, { shirt: 0xef6c00, pants: 0x37474f, hair: 0x5d4037, coat: 0xef6c00 }); }
   { const s = S('silvia', 2.6); if (s) add('silvia', 'Achter de toonbank bij Silvia', s, { shirt: 0xfdd835, pants: 0x1b5e20, hair: 0x111111, female: true, hairStyle: 'bun', apron: 0xc62828, skin: 0x8d5524 }); }
